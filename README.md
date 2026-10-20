@@ -1,25 +1,15 @@
 # KennysVideo
 
-KennysVideo 是基于开源项目 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-App) 修改的 Windows 客户端，其上游项目为 [LibreSpark/LibreTV](https://github.com/LibreSpark/LibreTV)。感谢原作者与贡献者。
+基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-App) 修改，上游为 [LibreSpark/LibreTV](https://github.com/LibreSpark/LibreTV)。修改版由 KennysPan 维护，保留 Apache License 2.0、版权声明和第三方许可。
 
-本修改版由 KennysPan 维护，保留原项目 Apache License 2.0 许可证和版权声明。各第三方库保留各自许可证。完整 LICENSE、NOTICE 和修改后源码随发布页的 source.zip 一起提供。
+[国内下载最新版本（Gitee）](https://gitee.com/kennysPan/kennys-video/releases/latest)
 
-## 下载与更新
+[GitHub 备份下载](https://github.com/KennysPan/KennysVideo/releases/latest)
 
-[下载最新正式版本](https://github.com/KennysPan/KennysVideo/releases/latest)
+1.1.6 起，启动检查版本和更新下载页均使用 Gitee 国内地址，不依赖 GitHub。旧版请先手动安装一次 1.1.6。没有更新不弹窗，断网不影响使用。
 
-- setup.exe：安装或覆盖更新，保留设置和观看历史。
-- x64.exe：免安装版。
-- source.zip：修改后的可构建源码（含 LICENSE、NOTICE 和构建说明，不包含 node_modules 和 Rust target）。GitHub 自动生成的 Source code 压缩包只包含本发布仓库文档，请下载带版本号的 source.zip 获取应用源码。
+setup.exe 用于安装及覆盖升级，x64.exe 为免安装版。带版本号的 source.zip 提供完整修改版源码、LICENSE、NOTICE、构建说明；平台自动生成的 Source code 包仅包含发布仓库文档。
 
-1.1.5 起支持启动后台检查版本，也可在设置中手动检查。有新版时提示打开发布页下载安装包，无更新不弹窗，断网不影响使用。1.1.4 及更早版本需要先手动安装 1.1.5。
+主要修改：Windows 原生窗口、播放器全屏和高度、KennysVideo 主题、真实海报、滚动控制、覆盖升级及国内版本检查。
 
-## 本修改版的主要变更
-
-- Windows 原生标题栏、可调整大小的窗口。
-- 播放区域高度与真正的屏幕全屏。
-- KennysVideo 品牌、暗色青蓝主题及海报默认图。
-- 真实影片封面加载和横向滚动控制。
-- 安装覆盖升级及启动版本检查。
-
-本仓库用于版本发布，不存储或分发影视视频内容。
+本仓库不存储或分发影视视频内容。
