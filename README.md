@@ -1,3 +1,5 @@
+![KennysVideo 宣传横幅](KennysVideo-banner.png)
+
 # KennysVideo
 
 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-App) 修改，上游为 [LibreSpark/LibreTV](https://github.com/LibreSpark/LibreTV)。修改版由 KennysPan 维护，保留 Apache License 2.0、版权声明和第三方许可。
