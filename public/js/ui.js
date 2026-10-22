@@ -960,6 +960,9 @@ function restoreNewPageState(pageId) {
 
 // Navigation Tab Switching
 function navigateToTab(pageId) {
+    // Older versions may have persisted the removed "sources" tab.
+    // Fall back to the home page instead of leaving the app blank after upgrade.
+    if (!document.getElementById(`page-${pageId}`)) pageId = 'home';
     const previousPageId = getCurrentPageId(); // Get current page ID before changing anything
     if (previousPageId && previousPageId !== pageId) { // Only save if navigating away
         try { saveCurrentPageState(previousPageId); }
@@ -1013,9 +1016,7 @@ function navigateToTab(pageId) {
 
 
     // Special handling for certain tabs AFTER state restoration attempt
-    if (pageId === 'sources' && typeof initSourceCatalog === 'function') {
-        initSourceCatalog();
-    } else if (pageId === 'history') {
+    if (pageId === 'history') {
         loadViewingHistory(); 
     } else if (pageId === 'filter' && !restorationResult.scrollHandled) { 
         // If filter state wasn't restored (scrollHandled would be false)

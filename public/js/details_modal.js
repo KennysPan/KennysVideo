@@ -2,6 +2,22 @@ function escapeDetailHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[character]));
 }
 
+function buildDetailApiUrl(base, parameters) {
+    const url = new URL(base);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+        throw new Error('数据源地址必须是 HTTP 或 HTTPS 地址');
+    }
+    if (!/\/api\.php\/provide\/vod\/?$/i.test(url.pathname)) {
+        url.pathname = url.pathname.replace(/\/$/, '') + '/api.php/provide/vod/';
+    }
+    for (const key of ['ac', 'pg', 't', 'wd', 'ids', 'h']) url.searchParams.delete(key);
+    for (const [key, value] of Object.entries(parameters)) {
+        if (value !== '' && value !== undefined) url.searchParams.set(key, String(value));
+    }
+    url.hash = '';
+    return url.href;
+}
+
 // 显示详情 - 修改为支持自定义API
 async function showDetails(id, vod_name, sourceCode) {
     // 密码保护校验
@@ -35,16 +51,12 @@ async function showDetails(id, vod_name, sourceCode) {
             const customApi = (typeof getCustomApiInfo === 'function') ? getCustomApiInfo(customIndex) : null;
             if (!customApi) throw new Error('Custom API not found for detail request');
             const baseDetailUrl = customApi.detail || customApi.url; 
-            detailApiUrl = typeof buildSourceCatalogUrl === 'function'
-                ? buildSourceCatalogUrl(baseDetailUrl, { ac: 'videolist', ids: id })
-                : baseDetailUrl + API_CONFIG.detail.path + encodeURIComponent(id);
+            detailApiUrl = buildDetailApiUrl(baseDetailUrl, { ac: 'videolist', ids: id });
         } else {
             const apiSite = API_SITES[sourceCode];
             if (!apiSite) throw new Error('API site config not found for detail request');
             const baseDetailUrl = apiSite.detail || apiSite.api; 
-            detailApiUrl = typeof buildSourceCatalogUrl === 'function'
-                ? buildSourceCatalogUrl(baseDetailUrl, { ac: 'videolist', ids: id })
-                : baseDetailUrl + API_CONFIG.detail.path + encodeURIComponent(id);
+            detailApiUrl = buildDetailApiUrl(baseDetailUrl, { ac: 'videolist', ids: id });
         }
 
         const requestOptions = {

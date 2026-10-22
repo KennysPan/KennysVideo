@@ -60,7 +60,7 @@ async function exportConfig() {
     config['cfgVer'] = '1.0.0';
     config['data'] = items;
     config['hash'] = await sha256(JSON.stringify(config['data']));
-    saveStringAsFile(JSON.stringify(config), 'LibreTV-Settings_' + times + '.json');
+    saveStringAsFile(JSON.stringify(config), 'KennysVideo-Settings_' + times + '.json');
 }
 
 // 将字符串保存为文件

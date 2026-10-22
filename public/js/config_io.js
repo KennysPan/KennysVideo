@@ -84,7 +84,7 @@ async function exportConfig() {
         return;
     }
     config['hash'] = await sha256(JSON.stringify(config['data']));
-    saveStringAsFile(JSON.stringify(config), 'LibreTV-Settings_' + times + '.json');
+    saveStringAsFile(JSON.stringify(config), 'KennysVideo-Settings_' + times + '.json');
 }
 
 // 将字符串保存为文件

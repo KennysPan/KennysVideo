@@ -26,6 +26,13 @@ const output = path.join(__dirname, '../dist-windows');
         });
         await page.waitForTimeout(300);
         assert.equal(await page.locator('h1.brand-wordmark').textContent(), 'KennysVideo');
+        assert.equal(await page.locator('[data-page="sources"]').count(), 0);
+        assert.equal(await page.locator('#page-sources').count(), 0);
+        const wordmarkStyle = await page.locator('h1.brand-wordmark').evaluate(el => {
+            const style = getComputedStyle(el);
+            return { display: style.display, paddingTop: style.paddingTop, paddingBottom: style.paddingBottom };
+        });
+        assert(parseFloat(wordmarkStyle.paddingTop) > 0 && parseFloat(wordmarkStyle.paddingBottom) > 0);
         fs.mkdirSync(output, { recursive: true });
         await page.locator('#page-home header').screenshot({ path: path.join(output, 'KennysVideo-logo-preview.png') });
         await page.evaluate(() => {

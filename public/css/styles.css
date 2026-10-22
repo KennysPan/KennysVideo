@@ -167,6 +167,9 @@ button, .card-hover {
 }
 
 .brand-wordmark {
+    display: inline-block;
+    padding: 0.08em 0.06em 0.12em;
+    line-height: 1.15;
     letter-spacing: -0.035em;
     white-space: nowrap;
 }

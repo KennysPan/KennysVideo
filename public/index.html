@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/bug_report.css">
-    <link rel="stylesheet" href="css/source_catalog.css">
 </head>
 <body class="page-bg text-white flex flex-col min-h-screen">
     <!-- Main Content Area -->
@@ -140,26 +139,6 @@
                 </div>
             </div>
         </div>
-
-        <section id="page-sources" class="page-content hidden container mx-auto px-4 py-8 pb-24" aria-labelledby="sourceCatalogTitle">
-            <h2 id="sourceCatalogTitle" class="text-2xl font-bold gradient-text mb-2">数据源专区</h2>
-            <p class="text-sm text-gray-400 mb-6">只浏览和搜索当前来源的影片</p>
-            <div class="source-catalog-toolbar">
-                <label>选择数据源<select id="sourceCatalogSource" aria-label="选择数据源"></select></label>
-                <label>分类<select id="sourceCatalogCategory" aria-label="来源分类"><option value="">全部分类</option></select></label>
-                <form id="sourceCatalogSearch" role="search">
-                    <label for="sourceCatalogKeyword">搜索此来源</label>
-                    <div class="source-catalog-search"><input id="sourceCatalogKeyword" type="search" placeholder="输入影片名称" maxlength="100"><button type="submit">搜索</button></div>
-                </form>
-            </div>
-            <div class="source-catalog-summary"><p id="sourceCatalogStatus" role="status" aria-live="polite"></p><button id="sourceCatalogRetry" type="button" hidden>重新加载</button></div>
-            <div id="sourceCatalogGrid" class="source-catalog-grid" aria-busy="false"></div>
-            <div class="source-catalog-pagination">
-                <button id="sourceCatalogPrev" type="button" disabled>上一页</button>
-                <span id="sourceCatalogPage">第 1 页</span>
-                <button id="sourceCatalogNext" type="button" disabled>下一页</button>
-            </div>
-        </section>
 
         <!-- Tab Content: History -->
         <div id="page-history" class="page-content hidden container mx-auto px-4 py-8">
@@ -356,10 +335,6 @@
             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span class="text-xs">历史</span>
         </button>
-        <button data-page="sources" class="nav-item flex flex-col items-center justify-center text-gray-400 hover:text-white transition-colors p-2">
-            <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" stroke-width="2"/><path d="M3 9h18M8 4v5M16 4v5" stroke-width="2"/></svg>
-            <span class="text-xs">片库</span>
-        </button>
         <button data-page="settings" class="nav-item flex flex-col items-center justify-center text-gray-400 hover:text-white transition-colors p-2">
             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             <span class="text-xs">设置</span>
@@ -517,7 +492,6 @@
     <script src="js/api_management.js"></script>
     <script src="js/app_event_listeners.js"></script>
     <script src="js/poster_images.js"></script>
-    <script src="js/source_catalog.js"></script>
     <script src="js/search_logic.js"></script>
     <script src="js/details_modal.js"></script>
     <script src="js/player_navigation.js"></script>
