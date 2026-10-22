@@ -2,6 +2,8 @@
 
 # KennysVideo
 
+**简体中文** | [English](README.en.md)
+
 面向 Windows 的开源视频客户端，集影视发现、资源搜索、在线播放、剧集管理和观看历史于一体。下载后即可安装使用，无需自行部署本地服务。
 
 KennysVideo 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-App) 二次开发，其上游为 [LibreSpark/LibreTV](https://github.com/LibreSpark/LibreTV)。修改版由 KennysPan 维护，重点优化 Windows 桌面交互、播放器全屏、海报加载、品牌界面和双源版本更新体验。
