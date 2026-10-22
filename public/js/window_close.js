@@ -8,6 +8,9 @@
     let pending = false;
     const style = document.createElement('style');
     style.textContent = `
+      body, body * { -webkit-user-select:none; user-select:none; }
+      input, textarea, [contenteditable="true"], [contenteditable=""], .selectable-text { -webkit-user-select:text; user-select:text; }
+      #windowCloseDialog, #windowCloseDialog * { -webkit-user-select:none; user-select:none; }
       #windowCloseDialog { color:#e2e8f0; background:#111d2b; border:1px solid #284657; border-radius:16px; padding:28px; width:min(440px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; box-shadow:0 24px 80px #0009; }
       #windowCloseDialog::backdrop { background:#0009; }
       #windowCloseDialog h2 { font-size:22px; font-weight:700; margin:0 0 8px; color:#a5f3fc; }

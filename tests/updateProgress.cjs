@@ -6,10 +6,11 @@ const path=require('node:path');
  try {
   const page=await browser.newPage({viewport:{width:900,height:640}});
   await page.setContent('<body style="font-family:Segoe UI,sans-serif;background:#0f1622;color:white"><h1>KennysVideo</h1></body>');
+  await page.addStyleTag({path:path.join(__dirname,'../public/css/styles.css')});
   await page.addScriptTag({path:path.join(__dirname,'../public/js/app_updates.js')});
   await page.evaluate(()=>{
    window.calls=[];
-   window.openUpdate=()=>showAppUpdate({current_version:'1.1.11',latest_version:'1.1.12',source:'github'},async command=>{
+   window.openUpdate=()=>showAppUpdate({current_version:'1.1.16',latest_version:'1.1.17',source:'github'},async command=>{
     calls.push(command);
     if(command==='download_app_update')return new Promise((resolve,reject)=>{window.finish=resolve;window.fail=reject;});
    });openUpdate();
@@ -21,7 +22,11 @@ const path=require('node:path');
   await send({stage:'downloading',source:'github',downloaded:3145728,total:5242880});
   assert.equal(await bar.getAttribute('value'),'60');
   assert.match(await page.locator('.update-bytes').innerText(),/3.00 MB \/ 5.00 MB/);
-  await page.screenshot({path:path.join(__dirname,'../dist-windows/KennysVideo-update-progress.png')});
+  await page.locator('#appUpdateDialog').screenshot({path:path.join(__dirname,'../dist-windows/KennysVideo-update-progress-next.png')});
+  await page.setViewportSize({width:320,height:500});
+  const compact=await page.locator('#appUpdateDialog').boundingBox();
+  assert(compact.x>=0 && compact.x+compact.width<=320, 'update dialog must fit a narrow window');
+  await page.setViewportSize({width:900,height:640});
   assert.equal(await page.locator('#appUpdateTitle').isVisible(),false);
   assert.equal(await page.getByText(/优先使用 GitHub/).isVisible(),false);
   assert.equal(await page.locator('.update-error').isVisible(),false);

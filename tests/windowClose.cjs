@@ -40,6 +40,9 @@ const version = JSON.parse(fs.readFileSync(path.join(__dirname,'../package.json'
   await open(); await open();
   assert.equal(await page.locator('#windowCloseDialog').count(),1);
   assert.equal(await page.locator('.close-cancel').evaluate(el=>el===document.activeElement),true);
+  await page.locator('#windowCloseTitle').click({clickCount:3});
+  await page.keyboard.press('Control+a');
+  assert.equal(await page.evaluate(()=>window.getSelection().toString()),'', 'close dialog text must not be selectable');
   await page.locator('.close-remember-input').check();
   await page.locator('.close-cancel').click();
   assert.equal((await actions()).length,0,'cancel must neither perform nor save an action');

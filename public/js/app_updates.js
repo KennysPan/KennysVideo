@@ -30,7 +30,7 @@ function showAppUpdate(result, invoke) {
     const dialog = document.createElement('dialog');
     dialog.id = 'appUpdateDialog';
     dialog.setAttribute('aria-labelledby', 'appUpdateTitle');
-    dialog.style.cssText = 'max-width:440px;width:calc(100% - 40px);padding:24px;border:1px solid #155e75;border-radius:14px;background:#111c2b;color:#f0f9ff;';
+    dialog.style.cssText = 'box-sizing:border-box;max-width:440px;width:calc(100% - 40px);max-height:calc(100dvh - 32px);overflow:auto;padding:24px;border:1px solid #155e75;border-radius:14px;background:#111c2b;color:#f0f9ff;';
     dialog.innerHTML = '<h2 id="appUpdateTitle" style="font-size:22px;font-weight:bold;color:#67e8f9">发现新版本</h2><p class="update-version" style="margin:16px 0"></p><p style="font-size:14px;color:#a8bbc9">优先使用 GitHub，超时或下载过慢会自动切换 Gitee。下载完成后点击安装，程序会关闭并启动安装器，保留设置和观看历史。</p><p class="update-error" role="status" style="margin-top:12px;color:#a5f3fc"></p><div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:24px"><button class="update-dismiss" style="padding:8px 12px">稍后再说</button><button class="update-manual" style="padding:8px 12px">手动下载</button><button class="update-download theme-action" style="padding:8px 12px;border-radius:8px">下载更新</button></div>';
     dialog.querySelector('.update-version').textContent = `${result.current_version} → ${result.latest_version}`;
     dialog.querySelector('.update-dismiss').onclick = () => dialog.close();
@@ -43,8 +43,7 @@ function showAppUpdate(result, invoke) {
     const progressPanel = document.createElement('div');
     progressPanel.className = 'update-progress-panel';
     progressPanel.hidden = true;
-    progressPanel.style.cssText = 'margin-top:20px';
-    progressPanel.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;font-size:14px"><span class="update-source"></span><span class="update-percent">0%</span></div><progress class="update-progress" aria-label="更新下载进度" max="100" value="0" style="display:block;width:100%;height:14px;accent-color:#22d3ee"></progress><p class="update-bytes" style="font-size:13px;color:#a8bbc9;margin-top:8px">0 B</p>';
+    progressPanel.innerHTML = '<div class="update-progress-heading"><span class="update-source"></span><span class="update-percent">0%</span></div><progress class="update-progress" aria-label="更新下载进度" max="100" value="0"></progress><p class="update-bytes">0 B</p>';
     dialog.insertBefore(progressPanel, message);
     const bar = progressPanel.querySelector('progress');
     const percentage = progressPanel.querySelector('.update-percent');

@@ -174,6 +174,83 @@ button, .card-hover {
     white-space: nowrap;
 }
 
+/* Explicit styling keeps WebView2 from using Windows' green/gray progress bar. */
+#appUpdateDialog .update-version {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+}
+.update-progress-panel {
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid rgba(125, 211, 252, 0.13);
+    border-radius: 12px;
+    background: rgba(7, 18, 30, 0.65);
+}
+.update-progress-panel[hidden] { display: none; }
+.update-progress-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.update-source { color: #b3c7d8; }
+.update-percent {
+    color: #7dd3fc;
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+.update-progress {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 8px;
+    border: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #223447;
+    color: #38bdf8;
+}
+.update-progress::-webkit-progress-bar {
+    background: #223447;
+    border-radius: 999px;
+}
+.update-progress::-webkit-progress-value {
+    background: linear-gradient(90deg, #38bdf8, #2dd4bf);
+    border-radius: 999px;
+}
+.update-progress::-moz-progress-bar {
+    background: linear-gradient(90deg, #38bdf8, #2dd4bf);
+    border-radius: 999px;
+}
+.update-progress:not([value]) {
+    background: linear-gradient(90deg, #223447 25%, #38bdf8 50%, #2dd4bf 60%, #223447 75%);
+    background-size: 250% 100%;
+    animation: update-progress-pending 1.6s ease-in-out infinite;
+}
+.update-progress:not([value])::-webkit-progress-bar { background: transparent; }
+.update-bytes {
+    margin-top: 12px;
+    color: #9bb1c5;
+    font-size: 12px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+}
+@keyframes update-progress-pending {
+    from { background-position: 100% 0; }
+    to { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .update-progress:not([value]) { animation: none; background-position: 50% 0; }
+}
+
 .theme-action {
     background: linear-gradient(110deg, var(--action-start), var(--action-end));
     border: 1px solid rgba(125, 211, 252, 0.25);
@@ -1152,7 +1229,7 @@ body.dplayer-custom-fullscreen-mode {
 
 /* Fullscreen player geometry is defined in player.css. */
 /* Desktop app chrome is not selectable; editable fields retain normal editing. */
-body { -webkit-user-select: none; user-select: none; }
+body, body * { -webkit-user-select: none; user-select: none; }
 input, textarea, [contenteditable="true"], [contenteditable=""], .selectable-text {
     -webkit-user-select: text;
     user-select: text;
