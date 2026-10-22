@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '../public');
 let mode = 'success';
 const submissions = [];
 const server = http.createServer((req,res)=>{
- if(req.url==='/submit'&&req.method==='POST'){
+ if(req.url==='/api/kennysvideo/feedback'&&req.method==='POST'){
   let body='';req.on('data',part=>body+=part);req.on('end',()=>{
    submissions.push(JSON.parse(body));
    const answer=()=>{res.setHeader('Content-Type','application/json');
@@ -36,8 +36,10 @@ const server = http.createServer((req,res)=>{
    await page.addScriptTag({path:path.join(root,'libs/tailwindcss.min.js')});
    await page.addScriptTag({path:path.join(root,'js/config.js')});
    const config=fs.readFileSync(path.join(root,'js/bug_report_config.js'),'utf8')
-    .replace('https://www.kennyspan.xyz/api/kennysvideo/feedback',origin+'/submit')
+    .replace('https://www.kennyspan.xyz/api/kennysvideo/feedback',origin+'/api/kennysvideo/feedback')
     .replace(/enabled: (true|false)/,`enabled: ${configured}`);
+   // Load the application's real fetch interceptor as well as the feedback UI.
+   await page.addScriptTag({path:path.join(root,'js/api.js')});
    await page.addScriptTag({content:config});await page.addScriptTag({path:path.join(root,'js/bug_report.js')});
    await page.evaluate(()=>openBugReport());return page;
   }
@@ -46,7 +48,7 @@ const server = http.createServer((req,res)=>{
   const page=await prepare();
   await page.getByRole('button',{name:'发送报告',exact:true}).click();assert.equal(submissions.length,0);
   await page.locator('[name=title]').fill('全屏时进度条没有显示');
-  await page.locator('#bugReportDialog [name=description]').fill('打开影片后点击全屏，底部进度条没有显示。');
+  await page.locator('#bugReportDialog [name=description]').fill('1');
   await page.locator('[name=steps]').fill('打开影片 → 点击全屏');
   await page.locator('[name=email]').fill('reporter@example.test');
   await page.screenshot({path:path.join(__dirname,'../dist-windows/KennysVideo-bug-report-preview.png')});

@@ -102,12 +102,16 @@ class FeedbackTests(unittest.TestCase):
         self.assertEqual(statuses.count(202), 1)
         self.assertEqual(statuses.count(200), 5)
     def test_bad_inputs_never_queue(self):
-        for change in [dict(description='短'), dict(title='bad\r\nBcc: other@example.test'), dict(reply_email='x\r\nBcc:y@example.test'), dict(request_id='not-a-uuid'), dict(to='other@example.test'), dict(description=['bad'])]:
+        for change in [dict(description=' '), dict(title='bad\r\nBcc: other@example.test'), dict(reply_email='x\r\nBcc:y@example.test'), dict(request_id='not-a-uuid'), dict(to='other@example.test'), dict(description=['bad'])]:
             self.assertEqual(self.request({**self.report(), **change})[0], 400)
         self.assertEqual(self.request(raw=b'{invalid')[0], 400)
         self.assertEqual(self.request(raw=b'x' * 32769)[0], 413)
         self.assertEqual(self.request(headers={'Content-Type':'text/plain'})[0], 415)
         self.assertFalse(self.service.deliver_one())
+    def test_single_character_description_is_accepted(self):
+        report = self.report()
+        report['description'] = '短'
+        self.assertEqual(self.request(report)[0], 202)
     def test_cors_preflight(self):
         headers = {'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'}
         self.assertEqual(self.request(method='OPTIONS', headers=headers)[0], 204)

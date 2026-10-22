@@ -59,9 +59,10 @@ async function handleApiRequest(url) {
     const originalFetch = window.fetch;
     
     window.fetch = async function(input, init) {
-        const requestUrl = typeof input === 'string' ? new URL(input, window.location.origin) : input.url;
+        const requestUrl = new URL(input instanceof Request ? input.url : input, window.location.origin);
         
-        if (requestUrl.pathname.startsWith('/api/')) {
+        if (requestUrl.origin === window.location.origin &&
+            ['/api/search', '/api/detail'].includes(requestUrl.pathname)) {
             if (window.isPasswordProtected && window.isPasswordVerified) {
                 if (window.isPasswordProtected() && !window.isPasswordVerified()) {
                     console.warn("API request blocked due to unverified password.");

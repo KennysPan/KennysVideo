@@ -32,8 +32,8 @@
         const description = field('description').value.trim();
         const steps = field('steps').value.trim();
         const email = field('email').value.trim();
-        if (!title || title.length > 100 || description.length < 10 || description.length > 4000 || steps.length > 2000 || email.length > 254) {
-            status('请填写问题标题，以及至少 10 个字的问题描述');
+        if (!title || title.length > 100 || !description || description.length > 4000 || steps.length > 2000 || email.length > 254) {
+            status('请填写问题标题和问题描述，内容不能只包含空格');
             return;
         }
         const version = SITE_CONFIG.version;
@@ -58,6 +58,13 @@
             try { result = await response.json(); } catch { throw new Error('服务未返回有效结果，请稍后重试'); }
             if (response.status === 429) throw new Error('反馈过于频繁或发送额度已用完，请稍后再试');
             if (response.status === 503) throw new Error('反馈服务暂不可用，内容已保留，请稍后重试');
+            if (response.status === 400) throw new Error('报告格式未通过校验，内容已保留（400）');
+            if (response.status === 403) throw new Error('反馈服务拒绝了当前应用来源，内容已保留（403）');
+            if (response.status === 409) {
+                submission = null;
+                throw new Error('报告编号发生冲突，内容已保留，请再次点击发送（409）');
+            }
+            if (response.status === 413) throw new Error('报告内容过大，请缩短描述后再试（413）');
             if (!response.ok || result?.success !== true) throw new Error('报告未能提交，请检查网络后重试');
             if (result.status === 'failed') throw new Error('报告已保存，但邮件发送失败，请稍后联系开发者');
             sent = true;
@@ -80,7 +87,7 @@
             dialog.id = 'bugReportDialog';
             dialog.className = 'bug-report-dialog';
             dialog.setAttribute('aria-labelledby', 'bugReportTitle');
-            dialog.innerHTML = '<form><h2 id="bugReportTitle">反馈 BUG</h2><p class="bug-report-device"></p><label>问题标题<input name="title" required maxlength="100" placeholder="例如：点击全屏后进度条不显示" autofocus></label><label>问题描述<textarea name="description" required minlength="10" maxlength="4000" placeholder="请说明遇到的问题、预期结果和实际情况"></textarea></label><label>复现步骤（可选）<textarea name="steps" maxlength="2000" placeholder="例如：打开影片 → 点击全屏 → …"></textarea></label><label>回复邮箱（可选）<input name="email" type="email" maxlength="254" autocomplete="email" placeholder="方便开发者联系你"></label><p style="margin-top:16px">点击发送后，你填写的内容、软件版本及运行平台将提交到开发者的反馈服务器，保存最多 30 天，并通过邮件转交开发者。</p><p class="bug-report-status" role="status" aria-live="polite"></p><div class="bug-report-actions"><button type="button" data-dismiss>取消</button><button type="submit">发送报告</button></div></form>';
+            dialog.innerHTML = '<form><h2 id="bugReportTitle">反馈 BUG</h2><p class="bug-report-device"></p><label>问题标题<input name="title" required maxlength="100" placeholder="例如：点击全屏后进度条不显示" autofocus></label><label>问题描述<textarea name="description" required maxlength="4000" placeholder="请说明遇到的问题、预期结果和实际情况"></textarea></label><label>复现步骤（可选）<textarea name="steps" maxlength="2000" placeholder="例如：打开影片 → 点击全屏 → …"></textarea></label><label>回复邮箱（可选）<input name="email" type="email" maxlength="254" autocomplete="email" placeholder="方便开发者联系你"></label><p style="margin-top:16px">点击发送后，你填写的内容、软件版本及运行平台将提交到开发者的反馈服务器，保存最多 30 天，并通过邮件转交开发者。</p><p class="bug-report-status" role="status" aria-live="polite"></p><div class="bug-report-actions"><button type="button" data-dismiss>取消</button><button type="submit">发送报告</button></div></form>';
             dialog.querySelector('form').addEventListener('submit', submit);
             dialog.querySelector('[data-dismiss]').addEventListener('click', () => { if (!sending) dialog.close(); });
             dialog.addEventListener('cancel', event => { if (sending) event.preventDefault(); });

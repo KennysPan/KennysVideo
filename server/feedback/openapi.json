@@ -24,7 +24,7 @@
     "properties": {
       "request_id": {"type": "string", "format": "uuid"},
       "title": {"type": "string", "minLength": 1, "maxLength": 100},
-      "description": {"type": "string", "minLength": 10, "maxLength": 4000},
+      "description": {"type": "string", "minLength": 1, "maxLength": 4000},
       "steps": {"type": "string", "maxLength": 2000},
       "reply_email": {"type": "string", "maxLength": 254},
       "version": {"type": "string", "minLength": 1, "maxLength": 40},

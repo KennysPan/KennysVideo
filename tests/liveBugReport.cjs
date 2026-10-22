@@ -15,7 +15,11 @@ const server = http.createServer((req, res) => {
 (async () => {
     assert(process.argv.includes('--send-test-email'), 'Requires explicit --send-test-email');
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-    const browser = await chromium.launch({ channel: 'msedge', headless: !process.argv.includes('--headed'), args: ['--no-proxy-server'] });
+    const args = ['--no-proxy-server'];
+    // Optional known public server IP avoids a local proxy's private fake-DNS mapping.
+    // TLS hostname and certificate verification remain enabled.
+    if (process.argv.includes('--public-server-dns')) args.push('--host-resolver-rules=MAP www.kennyspan.xyz 123.56.165.119');
+    const browser = await chromium.launch({ channel: 'msedge', headless: !process.argv.includes('--headed'), args });
     try {
         const page = await browser.newPage({ viewport: { width: 1000, height: 760 } });
         page.on('requestfailed', request => { if (request.url().startsWith('https://www.kennyspan.xyz/')) console.log('Feedback network failure:', request.failure()?.errorText); });
@@ -27,6 +31,7 @@ const server = http.createServer((req, res) => {
         await page.setContent('<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><body style="background:#101722;color:white;font-family:system-ui"><h1>KennysVideo · 反馈通道测试</h1></body></html>');
         await page.addStyleTag({ path: path.join(root, 'css/bug_report.css') });
         for (const script of ['config.js', 'bug_report_config.js', 'bug_report.js']) await page.addScriptTag({ path: path.join(root, 'js', script) });
+        await page.addScriptTag({ path: path.join(root, 'js/api.js') });
         await page.evaluate(() => openBugReport());
         const title = '反馈通道接入测试 ' + new Date().toISOString();
         await page.locator('#bugReportDialog [name=title]').fill(title);

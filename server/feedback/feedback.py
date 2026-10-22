@@ -72,7 +72,7 @@ class Feedback:
         if not isinstance(body, dict) or set(body) - expected:
             raise ValueError('Invalid fields')
         result = {}
-        for name, minimum, maximum in [('title', 1, 100), ('description', 10, 4000), ('steps', 0, 2000), ('reply_email', 0, 254), ('version', 1, 40), ('platform', 1, 80)]:
+        for name, minimum, maximum in [('title', 1, 100), ('description', 1, 4000), ('steps', 0, 2000), ('reply_email', 0, 254), ('version', 1, 40), ('platform', 1, 80)]:
             value = body.get(name, '')
             if not isinstance(value, str) or '\x00' in value:
                 raise ValueError('Invalid field')
