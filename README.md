@@ -18,7 +18,7 @@ KennysVideo 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-
 | 主要技术 | Rust、Tauri、HTML、CSS、JavaScript、Tailwind CSS、DPlayer、hls.js |
 | 使用方式 | 安装客户端后直接使用，不需要另行运行 Node.js 服务或数据库 |
 | 发布渠道 | GitHub 与 Gitee，支持程序内检查与下载安装更新 |
-| 本仓库用途 | 发布安装包、版本信息和项目文档；完整修改版源码随发行版提供 |
+| 本仓库用途 | 维护 Windows 客户端与反馈服务源码、构建说明、测试脚本及正式发行版 |
 
 上游具备跨平台基础，本修改版当前以 Windows x64 的实际构建与桌面体验为维护重点。其他平台的编译配置不代表本仓库已提供对应版本。
 
@@ -97,6 +97,20 @@ KennysVideo 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-
 - 系统托盘提供恢复窗口和退出入口；标题栏最小化按钮仍使用常规任务栏最小化行为。
 - 安装程序维护桌面及开始菜单快捷方式，并刷新对应应用图标。
 
+### 数据源片库与观看提示
+
+- 底部“片库”及自定义 API 列表中的“进入片库”支持按单个来源浏览、分类、翻页和搜索。
+- 片库选择不改变聚合搜索的数据源，点击影片继续进入详情、剧集及播放流程。
+- 进入播放页面时弹窗提示“切勿相信视频中的广告”；确认后不常驻遮挡，同页切集不重复提醒。
+
+### 应用内 BUG 反馈
+
+- 设置页与播放页提供反馈表单，提交问题、复现步骤和可选回复邮箱，失败保留输入，重试使用相同编号避免重复入队。
+- 客户端通过维护者的 HTTPS 接口提交报告，不包含 SMTP 授权码；普通用户无需自行部署服务。
+- 服务端使用 Python、Gunicorn、SQLite、Nginx 与 QQ SMTP，先持久保存再发送 HTML/纯文本邮件，带现有头像、品牌配色和问题分区。
+- 报告在反馈服务器最多保存 30 天，不自动附带观看记录、视频地址、自定义 API、日志或截图。
+- 自建服务的部署说明和接口契约见 [server/feedback](server/feedback/)。真实提交、实际收件及 HTML 排版已验证；原生 WebView2 自动化桌面验收仍未完成，详见 [验证记录](docs/bug-feedback.md)。
+
 ## 技术栈与职责
 
 | 技术／组件 | 在项目中的作用 |
@@ -113,6 +127,7 @@ KennysVideo 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-
 | tauri-plugin-single-instance | 识别重复启动，并恢复已有主窗口。 |
 | WebView2 | Windows 端网页界面运行环境，由 Tauri 使用系统 WebView 承载前端。 |
 | NSIS、Tauri CLI | 构建 Windows 安装程序，处理覆盖升级、快捷方式和卸载相关流程。 |
+| Python 3、Gunicorn、SQLite、Nginx、SMTP | 可选维护者反馈服务：HTTPS 接口、持久队列、邮件转发与运行管理；普通用户不需要部署。 |
 | Node.js／npm、Cargo | 安装构建依赖、运行开发命令和编译原生程序。 |
 | Python、Node.js、PowerShell、Playwright | 发布文件与源码包生成，以及前端、播放器、安装器和桌面行为的回归验证。 |
 
@@ -167,11 +182,13 @@ KennysVideo 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-
 
 初次使用可按“安装 → 在设置页确认来源 → 首页浏览或搜索 → 选择剧集播放”的顺序操作。系统需具备 WebView2 运行环境；推荐、图片与播放是否可用，还取决于第三方来源和当前网络。
 
-平台自动生成的 Source code 压缩包仅包含本发布仓库中的文件。需要编译完整应用时，请下载带版本号的 source.zip，而不是直接克隆发布仓库后执行构建。
+当前默认分支已包含可直接浏览和克隆的客户端及反馈服务源码。1.1.14 及此前发行版的标签创建于源码入库之前，对应平台自动生成的 Source code 包仍可能只含文档；复现这些版本请使用发行版附带的带版本号 source.zip。
 
 ## 源码结构与开发构建
 
-以下目录位于发行版提供的完整源码包中：
+以下目录已在仓库中提供，也包含于发行版源码包：
+
+[前端源码](public/) · [Rust 与桌面配置](src-tauri/) · [反馈服务](server/feedback/) · [测试脚本](tests/) · [构建指南](BUILDING.md)
 
 | 路径 | 内容 |
 | --- | --- |
@@ -186,11 +203,12 @@ KennysVideo 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-
 | src-tauri/src/window_close.rs、system_tray.rs | 关闭确认、偏好持久化与 Windows 系统托盘。 |
 | src-tauri/tauri.windows.conf.json | Windows 窗口和安装包配置。 |
 | src-tauri/installer-template.nsi | NSIS 安装、升级、快捷方式和图标处理。 |
+| server/feedback/ | 反馈 API、HTML 邮件模板、systemd／Nginx 示例与接口契约，不含实际凭据。 |
 | tests/、docs/、BUILDING.md | 回归验证脚本、功能说明与构建发布文档。 |
 
 ### Windows 构建步骤
 
-开发者需要 Node.js／npm、Rust 工具链、MSVC C++ 构建工具、Windows SDK 与 WebView2。解压完整源码后，在项目根目录执行：
+开发者需要 Node.js／npm、Rust 工具链、MSVC C++ 构建工具、Windows SDK 与 WebView2。克隆本仓库或解压对应版本源码后，在项目根目录执行：
 
 ```powershell
 npm ci
@@ -222,6 +240,6 @@ npm run tauri -- build --bundles nsis --target x86_64-pc-windows-msvc -- --locke
 
 ## 项目反馈
 
-可在仓库 Issues 中提交问题或功能建议。为便于复现，建议附上软件版本、Windows 版本、操作步骤、预期结果和实际现象；播放相关问题可补充来源名称及是否可稳定复现。
+可在软件的“反馈 BUG”中提交问题，也可使用仓库 Issues 提交问题或功能建议。为便于复现，建议附上软件版本、Windows 版本、操作步骤、预期结果和实际现象；播放相关问题可补充来源名称及是否可稳定复现。
 
 [GitHub 仓库](https://github.com/KennysPan/KennysVideo) · [Gitee 仓库](https://gitee.com/kennysPan/kennys-video)

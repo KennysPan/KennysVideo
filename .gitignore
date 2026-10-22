@@ -1,0 +1,20 @@
+node_modules
+server/feedback/.env
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Local build products and private deployment data
+dist-windows/
+src-tauri/target/
+src-tauri/gen/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+server_known_hosts

@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* Keep the desktop selection policy when regenerating styles.css. */
+body { -webkit-user-select: none; user-select: none; }
+input, textarea, [contenteditable="true"], [contenteditable=""], .selectable-text {
+    -webkit-user-select: text;
+    user-select: text;
+}
+img { -webkit-user-drag: none; }
+
