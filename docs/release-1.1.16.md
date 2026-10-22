@@ -10,6 +10,8 @@
 
 ## 安装与开源
 
+首页使用声明增加网络资源来源、视频源责任、侵权反馈渠道及“切勿相信视频中的广告”提示。每次完整启动软件均显示，同一次运行内切换页面、播放后返回首页不重复弹出；确认声明不会改动推荐开关等已有设置。
+
 Windows x64 安装包支持覆盖升级，另提供免安装版与完整源码。保留 GitHub 优先、超时或低速回退 Gitee 的更新策略及 SHA256 校验。
 
 基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-App) 修改，上游为 [LibreSpark/LibreTV](https://github.com/LibreSpark/LibreTV)。保留 Apache License 2.0、版权声明、NOTICE 与第三方许可。

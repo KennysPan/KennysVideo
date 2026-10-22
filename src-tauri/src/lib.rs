@@ -455,6 +455,13 @@ fn set_player_fullscreen(window: tauri::WebviewWindow, fullscreen: bool) -> Resu
     window.set_fullscreen(fullscreen).map_err(|error| error.to_string())
 }
 
+static STARTUP_DISCLAIMER_SHOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[tauri::command]
+fn claim_startup_disclaimer() -> bool {
+    !STARTUP_DISCLAIMER_SHOWN.swap(true, std::sync::atomic::Ordering::Relaxed)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   // let mut log_builder = Builder::default(); // Temporarily commented out
@@ -503,6 +510,7 @@ pub fn run() {
         make_http_request,
         search_videos,
         set_player_fullscreen,
+        claim_startup_disclaimer,
         window_close::get_close_preference,
         window_close::set_close_preference,
         window_close::apply_close_action,
