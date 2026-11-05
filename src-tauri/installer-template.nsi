@@ -483,6 +483,9 @@ Function .onInit
 
   !insertmacro SetContext
 
+  ; /D (the running app directory) takes priority over registry fallbacks.
+  Call RestorePreviousInstallLocation
+
   ; Check versions before showing any pages, including for silent installs.
   ReadRegStr $0 SHCTX "${UNINSTKEY}" "DisplayVersion"
   ${If} $0 != ""
@@ -495,8 +498,6 @@ Function .onInit
       Quit
     ${ElseIf} $1 >= 0
       StrCpy $UpdateMode 1
-      ; Retain the directory chosen by the existing installation.
-      Call RestorePreviousInstallLocation
     ${EndIf}
   ${EndIf}
 
@@ -518,7 +519,6 @@ Function .onInit
       StrCpy $INSTDIR "$LOCALAPPDATA\${PRODUCTNAME}"
     !endif
 
-    Call RestorePreviousInstallLocation
   ${EndIf}
 
 
@@ -707,7 +707,7 @@ Section Install
   WriteRegStr SHCTX "${UNINSTKEY}" "DisplayIcon" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\""
   WriteRegStr SHCTX "${UNINSTKEY}" "DisplayVersion" "${VERSION}"
   WriteRegStr SHCTX "${UNINSTKEY}" "Publisher" "${MANUFACTURER}"
-  WriteRegStr SHCTX "${UNINSTKEY}" "InstallLocation" "$\"$INSTDIR$\""
+  WriteRegStr SHCTX "${UNINSTKEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr SHCTX "${UNINSTKEY}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
   WriteRegDWORD SHCTX "${UNINSTKEY}" "NoModify" "1"
   WriteRegDWORD SHCTX "${UNINSTKEY}" "NoRepair" "1"
@@ -904,9 +904,46 @@ Section Uninstall
 SectionEnd
 
 Function RestorePreviousInstallLocation
-  ReadRegStr $4 SHCTX "${MANUPRODUCTKEY}" ""
-  StrCmp $4 "" +2 0
-    StrCpy $INSTDIR $4
+  ; Do not overwrite /D or a directory already chosen on the install-mode page.
+  ${If} $INSTDIR != "${PLACEHOLDER_INSTALL_DIR}"
+    Return
+  ${EndIf}
+  Push $4
+  ; Read both NSIS registry views: older installers used different names/views.
+  SetRegView 64
+  Call FindPreviousInstallLocation
+  ${If} $INSTDIR == "${PLACEHOLDER_INSTALL_DIR}"
+    SetRegView 32
+    Call FindPreviousInstallLocation
+  ${EndIf}
+  !insertmacro SetContext
+  Pop $4
+FunctionEnd
+
+!macro TryPreviousLocation key value
+  ${If} $INSTDIR == "${PLACEHOLDER_INSTALL_DIR}"
+    ReadRegStr $4 SHCTX "${key}" "${value}"
+    ; Historical InstallLocation values were wrapped in quotes.
+    StrCpy $R9 $4 1
+    ${If} $R9 == '$\"'
+      StrCpy $4 $4 -1 1
+    ${EndIf}
+    ${If} ${FileExists} "$4\${MAINBINARYNAME}.exe"
+    ${OrIf} ${FileExists} "$4\libretv.exe"
+    ${OrIf} ${FileExists} "$4\KennysVideo.exe"
+      StrCpy $INSTDIR $4
+    ${EndIf}
+  ${EndIf}
+!macroend
+
+Function FindPreviousInstallLocation
+  Push $R9
+  !insertmacro TryPreviousLocation "${UNINSTKEY}" "InstallLocation"
+  !insertmacro TryPreviousLocation "Software\Microsoft\Windows\CurrentVersion\Uninstall\KennysVideo" "InstallLocation"
+  !insertmacro TryPreviousLocation "${MANUPRODUCTKEY}" ""
+  !insertmacro TryPreviousLocation "Software\KennysPan\KennysVideo" ""
+  !insertmacro TryPreviousLocation "Software\KennysVideo\KennysVideo" ""
+  Pop $R9
 FunctionEnd
 
 Function Skip

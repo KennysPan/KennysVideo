@@ -212,7 +212,15 @@ pub async fn install_app_update(app: tauri::AppHandle) -> Result<(), String> {
     { let (path, hash) = INSTALLER.lock().map_err(|_| "Update state unavailable")?.clone().ok_or("Download a verified installer first")?;
       let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
       if !format!("{:x}", Sha256::digest(&bytes)).eq_ignore_ascii_case(&hash) { return Err("Cached installer checksum mismatch".into()); }
-      std::process::Command::new(path).spawn().map_err(|e| e.to_string())?; app.exit(0); Ok(()) }
+      let executable = std::env::current_exe().map_err(|e| e.to_string())?;
+      let directory = executable.parent().ok_or("Cannot determine current installation directory")?;
+      // NSIS /D must be last and unquoted, including paths containing spaces.
+      // raw_arg avoids Windows Command's automatic quoting of a spaced argument.
+      use std::os::windows::process::CommandExt;
+      let mut target = std::ffi::OsString::from("/D=");
+      target.push(directory);
+      std::process::Command::new(path).arg("/UPDATE").raw_arg(target).spawn().map_err(|e| e.to_string())?;
+      app.exit(0); Ok(()) }
     #[cfg(not(any(target_os = "windows", target_os = "android")))]
     { let _ = app; Err("Only Windows installers are supported".into()) }
 }
