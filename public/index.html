@@ -17,6 +17,8 @@
     <script src="libs/tailwindcss.min.js"></script>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/sponsorship.css">
+    <script defer src="js/sponsorship.js"></script>
     <link rel="stylesheet" href="css/bug_report.css">
     <link rel="stylesheet" href="css/mobile.css">
 </head>
@@ -291,6 +293,7 @@
                 </div>
                 <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
                     <label class="block text-sm font-medium text-gray-400 mb-3 border-b border-[#333] pb-1">一般功能</label>
+                    <button id="settingsSponsorshipButton" onclick="openSponsorship()" class="px-4 py-2 mb-2 w-full text-sky-300 border border-sky-800 rounded-lg text-sm">赞助列表</button>
                     <button onclick="openBugReport()" class="px-4 py-2 mb-2 w-full text-sky-300 border border-sky-800 rounded-lg text-sm">反馈 BUG</button>
                     <button onclick="importConfig()" class="px-4 py-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg mb-2">导入配置</button>
                     <button onclick="exportConfig()" class="px-4 py-2 mb-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">导出配置</button>
@@ -365,7 +368,7 @@
                     <div class="mt-2 flex justify-center md:justify-end space-x-4">
                         <a href="about.html" class="text-gray-400 hover:text-white text-sm transition-colors">关于我们</a>
                         <a href="privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">隐私政策</a>
-                        <a href="https://www.unicef.org/zh" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">捐赠</a>
+                        <button type="button" onclick="openSponsorship()" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">赞助</button>
                     </div>
                 </div>
             </div>
@@ -419,6 +422,7 @@
     <!-- 版权声明弹窗 -->
     <div id="disclaimerModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60]">
         <div class="startup-notice-card">
+            <button type="button" class="startup-sponsor-link" onclick="openSponsorship()">赞助列表</button>
             <h2 class="text-2xl font-bold gradient-text mb-6 text-center">使用声明</h2>
             <div class="startup-notice-body text-gray-300 space-y-4" tabindex="0">
                 <p>
