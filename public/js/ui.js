@@ -534,6 +534,12 @@ function addToViewingHistory(videoInfo) {
             const existingItem = history[existingIndex];
             existingItem.episodeIndex = videoInfo.episodeIndex;
             existingItem.timestamp = Date.now();
+            existingItem.sourceName = videoInfo.sourceName || '';
+            existingItem.sourceCode = videoInfo.sourceCode || '';
+            existingItem.directVideoUrl = videoInfo.directVideoUrl || videoInfo.url;
+            existingItem.playbackPosition = videoInfo.playbackPosition || 0;
+            if (Array.isArray(videoInfo.episodes)) existingItem.episodes = [...videoInfo.episodes];
+            if (Array.isArray(videoInfo.episodeNames)) existingItem.episodeNames = [...videoInfo.episodeNames];
             
             // 确保来源信息保留
             if (videoInfo.sourceName && !existingItem.sourceName) {

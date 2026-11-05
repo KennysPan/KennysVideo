@@ -1,5 +1,18 @@
 // DPlayer Handler Logic
 
+function setupPlayerBrandPlaceholder(player) {
+    const brand = document.createElement('div');
+    brand.className = 'player-brand-placeholder';
+    brand.setAttribute('aria-hidden', 'true');
+    brand.innerHTML = '<img src="image/kennys-logo.png" alt=""><div><strong>KennysVideo</strong><small>自由观影，畅享精彩</small></div>';
+    player.container.appendChild(brand);
+    const hide = () => { brand.hidden = true; };
+    player.on('loadeddata', hide);
+    player.on('playing', hide);
+    if (player.video.readyState >= 2) hide();
+    return brand;
+}
+
 // Assumes dp, currentHls, adFilteringEnabled, autoplayEnabled, currentVideoUrl, 
 // currentVideoTitle, currentEpisodeIndex, currentEpisodes,
 // isUserSeeking, videoHasEnded, userClickedPosition are global (from player_vars.js)
@@ -47,7 +60,7 @@ function initPlayer(videoUrl, sourceCode) {
         video: {
             url: videoUrl,
             type: 'hls',
-            pic: 'image/nomedia.svg',
+            pic: '',
             customType: {
                 hls: function(videoElement, playerInstance) { // Corrected parameters for DPlayer customType
                     if (currentHls && currentHls.destroy) { 
@@ -126,6 +139,7 @@ function initPlayer(videoUrl, sourceCode) {
     });
 
     
+    setupPlayerBrandPlaceholder(dp);
     dp.on('loadedmetadata', function() {
         hlsPlaybackStarted = true; errorDisplayedGlobal = false;
         if (dplayerErrorTimeout) { clearTimeout(dplayerErrorTimeout); dplayerErrorTimeout = null; }
@@ -135,7 +149,7 @@ function initPlayer(videoUrl, sourceCode) {
 
         const urlParams = new URLSearchParams(window.location.search);
         const savedPosition = parseInt(urlParams.get('position') || '0');
-        if (savedPosition > 10 && dp && dp.video && dp.video.duration > 0 && savedPosition < dp.video.duration - 2) {
+        if (savedPosition > 0 && dp && dp.video && dp.video.duration > 0 && savedPosition < dp.video.duration - 2) {
             dp.seek(savedPosition); 
             if(typeof showPositionRestoreHint === 'function') showPositionRestoreHint(savedPosition);
         } else {

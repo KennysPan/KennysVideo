@@ -1,5 +1,11 @@
 /* Keep the controls and episode navigation visible in shorter desktop windows. */
 .player-touch-surface { touch-action:none; }
+.player-brand-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:clamp(12px,3vw,32px); pointer-events:none; z-index:1; padding:24px; box-sizing:border-box; background:#000; }
+.player-brand-placeholder[hidden] { display:none; }
+.player-brand-placeholder img { width:clamp(52px,12vw,120px); height:clamp(52px,12vw,120px); object-fit:contain; flex-shrink:0; }
+.player-brand-placeholder strong { display:block; font:700 clamp(22px,5vw,56px)/1.25 Arial,sans-serif; color:#67e8f9; white-space:nowrap; }
+.player-brand-placeholder small { display:block; margin-top:10px; text-align:center; color:#999; font:clamp(12px,1.8vw,20px)/1.5 Arial,sans-serif; }
+#episodesList .episode-btn { white-space:normal; overflow-wrap:anywhere; min-height:44px; }
 .player-input-feedback {
     position:absolute; top:35%; left:50%; transform:translate(-50%,-50%);
     z-index:30; max-width:calc(100% - 40px); padding:12px 18px;

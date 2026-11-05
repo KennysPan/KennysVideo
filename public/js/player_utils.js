@@ -34,6 +34,7 @@ function saveToHistory() {
         url: `player.html?url=${encodeURIComponent(currentVideoUrl)}&title=${encodeURIComponent(currentVideoTitle)}&source=${encodeURIComponent(sourceName)}&source_code=${encodeURIComponent(sourceCode)}&index=${currentEpisodeIndex}&position=${Math.floor(currentPosition || 0)}`,
         episodeIndex: currentEpisodeIndex,
         sourceName: sourceName,
+        sourceCode,
         timestamp: Date.now(),
         playbackPosition: currentPosition,
         duration: videoDuration,
@@ -47,6 +48,7 @@ function saveToHistory() {
             history[existingIndex].episodeIndex = currentEpisodeIndex;
             history[existingIndex].timestamp = Date.now();
             history[existingIndex].sourceName = sourceName;
+            history[existingIndex].sourceCode = sourceCode;
             history[existingIndex].directVideoUrl = currentVideoUrl;
             history[existingIndex].playbackPosition = currentPosition > 10 ? currentPosition : history[existingIndex].playbackPosition;
             history[existingIndex].duration = videoDuration || history[existingIndex].duration;

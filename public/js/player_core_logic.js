@@ -163,6 +163,7 @@ function playEpisode(index) {
     
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('index', index); newUrl.searchParams.set('url', urlToPlay);
+    newUrl.searchParams.delete('position'); // A resumed position belongs only to the original episode.
     if (sourceName) newUrl.searchParams.set('source', sourceName);
     if (currentSourceCode) newUrl.searchParams.set('source_code', currentSourceCode);
     const referrerParam = currentUrlParams.searchParams.get('referrer'); 

@@ -127,6 +127,28 @@ async function showDetails(id, vod_name, sourceCode) {
             currentEpisodeNames = parsedEpisodes.map(ep => ep.name || '');
             localStorage.setItem('currentEpisodeNames', JSON.stringify(currentEpisodeNames));
             episodesReversed = false; // episodesReversed from app_globals.js
+            // Open the player directly; resume only a matching provider/URL record.
+            if (typeof playVideo === 'function') {
+                let history = [];
+                try { history = JSON.parse(localStorage.getItem('viewingHistory') || '[]'); } catch {}
+                if (!Array.isArray(history)) history = [];
+                const saved = history.find(item => item.title === currentVideoTitle && (
+                    item.sourceCode === sourceCode ||
+                    currentEpisodes.includes(item.directVideoUrl || item.url) ||
+                    (item.sourceName && item.sourceName === sourceNameDisplay)
+                ));
+                let index = saved ? Math.trunc(Number(saved.episodeIndex)) || 0 : 0;
+                if(saved) {
+                    let savedUrl=saved.directVideoUrl || saved.url;
+                    try { savedUrl=new URL(saved.url,location.href).searchParams.get('url') || savedUrl; } catch {}
+                    const found=currentEpisodes.indexOf(savedUrl);
+                    if(found>=0) index=found;
+                }
+                index=Math.max(0,Math.min(index,currentEpisodes.length-1));
+                const position = Number(saved?.playbackPosition);
+                playVideo(currentEpisodes[index],currentVideoTitle,sourceCode,index,Number.isFinite(position) ? Math.max(0,position) : 0,sourceNameDisplay);
+                return;
+            }
             modalContent.innerHTML = `
                 <div class="flex justify-end mb-2">
                     <button onclick="toggleEpisodeOrder('${sourceCode}')" class="px-4 py-1 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg transition-colors flex items-center space-x-1">

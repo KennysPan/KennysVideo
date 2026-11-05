@@ -1,5 +1,5 @@
 // 更新播放视频函数，修改为在新标签页中打开播放页面，并保存到历史记录
-function playVideo(url, vod_name, sourceCode, episodeIndex = 0) {
+function playVideo(url, vod_name, sourceCode, episodeIndex = 0, playbackPosition = 0, providerName = '') {
     // 密码保护校验
     if (window.isPasswordProtected && window.isPasswordVerified) { // Assuming these are globally available
         if (window.isPasswordProtected() && !window.isPasswordVerified()) {
@@ -12,9 +12,9 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0) {
         return;
     }
     
-    let sourceName = '';
+    let sourceName = providerName;
     const modalTitleEl = document.getElementById('modalTitle'); // Corrected from modalTitle
-    if (modalTitleEl) {
+    if (modalTitleEl && !sourceName) {
         const sourceSpan = modalTitleEl.querySelector('span.text-gray-400');
         if (sourceSpan) {
             const sourceText = sourceSpan.textContent;
@@ -47,6 +47,8 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0) {
         url: url,
         episodeIndex: episodeIndex,
         sourceName: sourceName,
+        sourceCode,
+        playbackPosition,
         timestamp: Date.now(),
         episodes: currentEpisodes && currentEpisodes.length > 0 ? [...currentEpisodes] : [] // Use global currentEpisodes
         , episodeNames: currentEpisodeNames && currentEpisodeNames.length > 0 ? [...currentEpisodeNames] : []
@@ -59,7 +61,7 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0) {
         console.warn("addToViewingHistory function not found.");
     }
     
-    const playerUrl = `player.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(videoTitleForHistory)}&index=${episodeIndex}&source=${encodeURIComponent(sourceName)}&source_code=${encodeURIComponent(sourceCode)}`;
+    const playerUrl = `player.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(videoTitleForHistory)}&index=${episodeIndex}&source=${encodeURIComponent(sourceName)}&source_code=${encodeURIComponent(sourceCode)}&position=${Math.floor(playbackPosition)}`;
     showVideoPlayer(playerUrl);
 }
 

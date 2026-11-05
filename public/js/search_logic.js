@@ -1,4 +1,36 @@
-// 搜索功能 - 修改为支持多选API和多页结果
+function normalizeSearchTitle(value) {
+    return String(value || '').normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu,'');
+}
+function similarSearchTerms(query) {
+    const terms = [];
+    for (const group of ['会悔回汇慧惠','期期待','友有又','再在','的地得','他她它','做作','像象向','晴情清','历厉力','未末']) {
+        for (let i=0;i<query.length;i++) if(group.includes(query[i])) {
+            for(const ch of group) if(ch!==query[i]) terms.push(query.slice(0,i)+ch+query.slice(i+1));
+        }
+    }
+    // Short fragments retrieve candidates from providers that only support exact keywords.
+    if(query.length>=3) terms.push(query.slice(0,2),query.slice(-2));
+    return [...new Set(terms)].filter(t=>t!==query).slice(0,2);
+}
+function searchTitleScore(title, query) {
+    const a=normalizeSearchTitle(title), b=normalizeSearchTitle(query);
+    if(a===b) return 100;
+    if(a.includes(b)) return 90;
+    if(b.length<3) return 0;
+    // Compare against title prefixes too, so “沉浸版/特别篇” suffixes do not mask a typo.
+    let best=Infinity;
+    for(const candidate of [a,a.slice(0,b.length)]) {
+        let row=Array.from({length:b.length+1},(_,i)=>i);
+        for(let i=0;i<candidate.length;i++) {
+            const next=[i+1];
+            for(let j=0;j<b.length;j++) next.push(Math.min(next[j]+1,row[j+1]+1,row[j]+(candidate[i]===b[j]?0:1)));
+            row=next;
+        }
+        best=Math.min(best,row[b.length]);
+    }
+    return best<=1 ? 70 : b.length>=5&&best<=2 ? 50 : 0;
+}
+// Search providers keep their existing wd contract; approximate requests are bounded.
 async function search() {
     // 密码保护校验
     if (window.isPasswordProtected && window.isPasswordVerified) { // Assuming these are globally available
@@ -29,7 +61,7 @@ async function search() {
         sessionStorage.setItem('lastPageView', 'searchResults');
         
         let allResults = [];
-        const searchPromises = selectedAPIs.map(async (apiId) => { // selectedAPIs from app_globals.js
+        const searchSources = (term, approximate=false) => Promise.all(selectedAPIs.map(async (apiId) => {
             let apiUrl = ''; 
             try {
                 const resultsAreaEl = document.getElementById('resultsArea');
@@ -44,13 +76,13 @@ async function search() {
                     if (!customApi) return [];
                     apiBaseUrl = customApi.url;
                     // API_CONFIG assumed to be global or defined elsewhere
-                    apiUrl = apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
+                    apiUrl = apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(term);
                     apiName = customApi.name;
                 } else {
                     // API_SITES assumed to be global
                     if (!API_SITES[apiId]) return [];
                     apiBaseUrl = API_SITES[apiId].api;
-                    apiUrl = apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
+                    apiUrl = apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(term);
                     apiName = API_SITES[apiId].name;
                 }
                 
@@ -100,13 +132,13 @@ async function search() {
                 }));
                 
                 const pageCount = data.pagecount || 1;
-                const pagesToFetch = Math.min(pageCount - 1, API_CONFIG.search.maxPages - 1);
+                const pagesToFetch = approximate ? 0 : Math.min(pageCount - 1, API_CONFIG.search.maxPages - 1);
                 
                 if (pagesToFetch > 0) {
                     const additionalPagePromises = [];
                     for (let page = 2; page <= pagesToFetch + 1; page++) {
                         const pageUrl = apiBaseUrl + API_CONFIG.search.pagePath
-                            .replace('{query}', encodeURIComponent(query))
+                            .replace('{query}', encodeURIComponent(term))
                             .replace('{page}', page);
                         
                         const pagePromise = (async () => {
@@ -169,15 +201,25 @@ async function search() {
                 console.warn(`API ${apiId} (${apiUrl || 'URL未定义'}) 搜索最外层捕获失败:`, error.message);
                 return [];
             }
-        });
+        }));
         
-        const resultsArray = await Promise.all(searchPromises);
+        const resultsArray = await searchSources(query);
         
         resultsArray.forEach(results => {
             if (Array.isArray(results) && results.length > 0) {
                 allResults = allResults.concat(results);
             }
         });
+        if(!allResults.some(item=>searchTitleScore(item.vod_name,query)>=90)) {
+            const approximate=await Promise.all(similarSearchTerms(query).map(term=>searchSources(term,true)));
+            allResults.push(...approximate.flat(2).filter(item=>searchTitleScore(item.vod_name,query)>0));
+        }
+        const seenResults=new Set();
+        allResults=allResults.filter(item=>{
+            const key=`${item.source_code}:${item.vod_id}`;
+            if(seenResults.has(key)) return false;
+            seenResults.add(key); return true;
+        }).sort((a,b)=>searchTitleScore(b.vod_name,query)-searchTitleScore(a.vod_name,query));
         
         const searchResultsCount = document.getElementById('searchResultsCount');
         if (searchResultsCount) {
