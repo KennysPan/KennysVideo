@@ -21,7 +21,20 @@ document.addEventListener('passwordVerified', () => {
     initializePageContent();
 });
 
-function initializePageContent() {
+let playerAdNoticeConfirmation;
+
+function confirmPlayerAdNotice() {
+    if (!playerAdNoticeConfirmation) {
+        playerAdNoticeConfirmation = new Promise(resolve => {
+            const dialog = document.getElementById('playerAdNotice');
+            dialog.addEventListener('close', resolve, { once: true });
+            dialog.showModal();
+        });
+    }
+    return playerAdNoticeConfirmation;
+}
+
+async function initializePageContent() {
     const urlParams = new URLSearchParams(window.location.search);
     let videoUrl = urlParams.get('url');
     const title = urlParams.get('title');
@@ -67,6 +80,7 @@ function initializePageContent() {
     
     try {
         currentEpisodes = episodesListParam ? JSON.parse(decodeURIComponent(episodesListParam)) : JSON.parse(localStorage.getItem('currentEpisodes') || '[]');
+        currentEpisodeNames = JSON.parse(localStorage.getItem('currentEpisodeNames') || '[]');
         if (index < 0 || (currentEpisodes.length > 0 && index >= currentEpisodes.length)) {
             index = (index >= currentEpisodes.length && currentEpisodes.length > 0) ? currentEpisodes.length - 1 : 0;
             const newUrl = new URL(window.location.href);
@@ -85,6 +99,7 @@ function initializePageContent() {
     if (videoTitleElement) videoTitleElement.textContent = currentVideoTitle;
 
     if (videoUrl) {
+        await confirmPlayerAdNotice();
         if(typeof initPlayer === 'function') initPlayer(videoUrl, sourceCode);
     } else {
         if(typeof showError === 'function') showError('无效的视频链接');

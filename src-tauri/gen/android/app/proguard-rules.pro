@@ -1,4 +1,7 @@
 # Add project specific ProGuard rules here.
+-keep class com.libretv.app.KennysMobilePlugin { *; }
+-keep class com.libretv.app.FullscreenArgs { *; }
+-keep class com.libretv.app.ExportArgs { *; }
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 #
@@ -19,3 +22,5 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-keep class com.libretv.app.InstallArgs { *; }
+-keep class com.libretv.app.PlayerControlArgs { *; }

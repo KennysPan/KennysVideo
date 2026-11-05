@@ -1,0 +1,14 @@
+KennysVideo
+
+Modified and maintained by KennysPan.
+Based on KeyRotate/LibreTV-App: https://github.com/KeyRotate/LibreTV-App
+Upstream project: LibreSpark/LibreTV: https://github.com/LibreSpark/LibreTV
+
+This distribution preserves the upstream Apache License, Version 2.0
+(see LICENSE). Original copyright and third-party notices are retained.
+Individual bundled libraries retain their own license terms.
+
+Changes in this distribution: Windows window decorations and resizing,
+player fullscreen and layout, KennysVideo branding, poster loading,
+carousel controls, installer upgrade detection and startup update checks.
+This is an independently maintained modified version.

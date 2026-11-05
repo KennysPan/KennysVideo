@@ -1,0 +1,16 @@
+.bug-report-dialog {width:min(540px,calc(100% - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:24px;border:1px solid #285069;border-radius:12px;background:#101d2b;color:#e5edf5;overflow-y:auto}
+.bug-report-dialog::backdrop {background:rgba(0,0,0,.65)}
+.bug-report-dialog h2 {margin:0 0 8px;font-size:20px;font-weight:600;color:#67e8f9}
+.bug-report-dialog p {font-size:13px;line-height:1.6;color:#a9bdce}
+.bug-report-dialog label {display:block;margin-top:16px;font-size:14px}
+.bug-report-dialog input,.bug-report-dialog textarea {display:block;width:100%;box-sizing:border-box;margin-top:8px;padding:10px 12px;border:1px solid #365366;border-radius:7px;background:#0b141e;color:#e5edf5;font-size:14px;user-select:text}
+.bug-report-dialog textarea {min-height:100px;resize:vertical}
+.bug-report-dialog input {min-height:44px}
+.bug-report-dialog .bug-report-actions {display:flex;justify-content:flex-end;gap:12px;margin-top:20px}
+.bug-report-dialog button {min-height:44px;padding:8px 16px;border:1px solid #365366;border-radius:7px;background:#172e3a;color:#c7e8f7}
+.bug-report-dialog button[type=submit] {background:#67e8f9;color:#08232f;font-weight:600}
+.bug-report-dialog button:disabled {opacity:.45;cursor:not-allowed}
+.bug-report-dialog :focus-visible {outline:2px solid #67e8f9;outline-offset:3px}
+.bug-report-dialog .bug-report-status {min-height:22px;margin-top:16px;color:#fcd34d}
+.bug-report-dialog .bug-report-status[data-success=true] {color:#86efac}
+@media(max-height:600px){.bug-report-dialog{padding:16px}.bug-report-dialog label{margin-top:10px}.bug-report-dialog textarea{min-height:70px}}

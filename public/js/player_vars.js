@@ -3,6 +3,7 @@
 let currentVideoTitle = '';
 let currentEpisodeIndex = 0;
 let currentEpisodes = [];
+let currentEpisodeNames = [];
 let episodesReversed = false;
 let dp = null;
 let currentHls = null; 

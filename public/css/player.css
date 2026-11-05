@@ -1,3 +1,140 @@
+/* Keep the controls and episode navigation visible in shorter desktop windows. */
+.player-touch-surface { touch-action:none; }
+.player-input-feedback {
+    position:absolute; top:35%; left:50%; transform:translate(-50%,-50%);
+    z-index:30; max-width:calc(100% - 40px); padding:12px 18px;
+    border:1px solid #285069; border-radius:12px; background:rgba(10,22,34,.92);
+    color:#a5f3fc; font-size:16px; font-variant-numeric:tabular-nums;
+    text-align:center; pointer-events:none;
+}
+#playerContainer > .relative {
+    position: relative;
+}
+
+#player {
+    width: 100%;
+    height: min(52vh, 460px);
+    min-height: 0;
+    background: #000;
+}
+
+#player .dplayer-video {
+    object-fit: contain;
+}
+
+.player-ad-notice {
+    width: min(400px, calc(100% - 32px));
+    margin: auto;
+    padding: 24px;
+    border: 1px solid #285069;
+    border-radius: 12px;
+    background: #101d2b;
+    color: #e5edf5;
+}
+
+.player-ad-notice::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.player-ad-notice h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.player-ad-notice p {
+    margin: 16px 0 24px;
+    color: #fcd34d;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.player-ad-notice button {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    background: #67e8f9;
+    color: #08232f;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.player-ad-notice button:focus-visible {
+    outline: 2px solid #e5edf5;
+    outline-offset: 3px;
+}
+
+body.dplayer-custom-fullscreen-mode #playerContainer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    z-index: 100000 !important;
+    background: #000;
+}
+
+body.dplayer-custom-fullscreen-mode #playerContainer > .relative,
+body.dplayer-custom-fullscreen-mode #player {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+}
+
+/* Only the outer container is fixed. Fixed video children used to cover the controls. */
+body.dplayer-custom-fullscreen-mode #player .dplayer-video-wrap {
+    position: relative !important;
+    z-index: auto !important;
+}
+
+body.dplayer-custom-fullscreen-mode #player .dplayer-video {
+    z-index: auto !important;
+}
+
+#player .dplayer-controller,
+#player .dplayer-controller-mask {
+    z-index: 20;
+}
+
+/* Keep the timeline and buttons reachable even on machines with no mousemove events. */
+body.dplayer-custom-fullscreen-mode #player .dplayer-controller {
+    opacity: 1 !important;
+    transform: none !important;
+    bottom: env(safe-area-inset-bottom, 0px);
+    visibility: visible !important;
+}
+
+/* On Android fullscreen, let DPlayer's inactivity timer hide the controls.
+   The desktop/native fullscreen path keeps them visible for mouse access. */
+@media (max-width: 600px) {
+    .android-app body.dplayer-custom-fullscreen-mode #player .dplayer-controller,
+    .android-app body.dplayer-custom-fullscreen-mode #player .dplayer-controller-mask {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(100%);
+        transition: opacity .2s ease, transform .2s ease, visibility .2s;
+    }
+    .android-app body.dplayer-custom-fullscreen-mode #player.dplayer-show-controller .dplayer-controller,
+    .android-app body.dplayer-custom-fullscreen-mode #player.dplayer-show-controller .dplayer-controller-mask,
+    .android-app body.dplayer-custom-fullscreen-mode #player:hover .dplayer-controller {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+    }
+}
+
+body.dplayer-custom-fullscreen-mode #player .dplayer-controller-mask {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+body.dplayer-custom-fullscreen-mode #player .dplayer-video-wrap {
+    cursor: default;
+}
+
 /* Styles for custom video view mode settings in DPlayer */
 .dplayer-setting-item.dplayer-setting-item-active .dplayer-toggle {
     /* Ensure the checkmark is visible and styled according to the theme */

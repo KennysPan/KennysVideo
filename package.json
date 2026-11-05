@@ -1,12 +1,14 @@
 {
   "name": "libretv",
-  "version": "1.1.0",
+  "version": "1.1.21",
   "description": "免费在线视频搜索与观看平台",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "npx tauri dev",
     "tauri": "tauri",
+    "android:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1",
+    "android:dev": "tauri android dev",
     "serve:public": "serve public -l 3000 -s",
     "build:css": "tailwindcss -i ./public/css/input.css -o ./public/css/styles.css --minify"
   },

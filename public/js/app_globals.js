@@ -6,6 +6,9 @@ let customAPIs = JSON.parse(localStorage.getItem('customAPIs') || '[]'); // 存�
 let currentEpisodeIndex = 0;
 // 添加当前视频的所有集数
 let currentEpisodes = [];
+// Keep the provider's episode labels alongside URLs so variety shows and
+// specials retain names such as "先导片" instead of being renamed 第X集.
+let currentEpisodeNames = [];
 // 添加当前视频的标题
 let currentVideoTitle = '';
 // 全局变量用于倒序状态

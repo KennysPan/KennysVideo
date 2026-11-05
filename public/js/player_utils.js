@@ -38,6 +38,7 @@ function saveToHistory() {
         playbackPosition: currentPosition,
         duration: videoDuration,
         episodes: currentEpisodes && currentEpisodes.length > 0 ? [...currentEpisodes] : []
+        , episodeNames: currentEpisodeNames && currentEpisodeNames.length > 0 ? [...currentEpisodeNames] : []
     };
     try {
         const history = JSON.parse(localStorage.getItem('viewingHistory') || '[]');
@@ -54,6 +55,7 @@ function saveToHistory() {
                 if (!history[existingIndex].episodes || !Array.isArray(history[existingIndex].episodes) || history[existingIndex].episodes.length !== currentEpisodes.length) {
                     history[existingIndex].episodes = [...currentEpisodes];
                 }
+                if (currentEpisodeNames && currentEpisodeNames.length > 0) history[existingIndex].episodeNames = [...currentEpisodeNames];
             }
             const updatedItem = history.splice(existingIndex, 1)[0];
             history.unshift(updatedItem);
@@ -125,6 +127,12 @@ function setupLongPressSpeedControl() {
     let longPressTimer = null;
     let originalPlaybackRate = 1.0;
     let isLongPress = false;
+    const cancelLongPress = () => {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        if (isLongPress) { dp.video.playbackRate = originalPlaybackRate; isLongPress = false; }
+    };
+    playerElement.addEventListener('player-gesture-start', cancelLongPress);
+    dp.on('destroy', () => playerElement.removeEventListener('player-gesture-start', cancelLongPress));
 
     function showSpeedHint(speed) { showShortcutHint(`${speed}倍速`, 'right'); }
 
@@ -141,7 +149,7 @@ function setupLongPressSpeedControl() {
     };
     
     playerElement.addEventListener('touchstart', function(e) {
-        if (dp.video.paused) return;
+        if (dp.video.paused || document.getElementById('playerContainer')?.classList.contains('controls-locked')) return;
         originalPlaybackRate = dp.video.playbackRate;
         longPressTimer = setTimeout(() => {
             if (dp.video.paused) { clearTimeout(longPressTimer); longPressTimer = null; return; }

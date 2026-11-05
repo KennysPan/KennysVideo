@@ -9,6 +9,27 @@
 
 console.log('douban_ui.js loaded');
 
+function escapeMovieText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+function configureMovieCard(card, title) {
+    card.dataset.movieTitle = String(title ?? '');
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `搜索 ${title}`);
+    card.classList.add('cursor-pointer');
+}
+// Delegation also survives cached home/category HTML being restored.
+document.addEventListener('click', event => {
+    const card = event.target.closest('[data-movie-title]');
+    if (card) fillAndSearchWithDouban(card.dataset.movieTitle);
+});
+document.addEventListener('keydown', event => {
+    if (!event.target.matches('[data-movie-title]') || !['Enter', ' '].includes(event.key)) return;
+    event.preventDefault();
+    fillAndSearchWithDouban(event.target.dataset.movieTitle);
+});
+
 function fillSearchInput(title) {
     if (!title) return;
     const safeTitle = title.replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
@@ -36,22 +57,11 @@ function fillAndSearch(title) {
 // These will need to be accessible or passed.
 async function fillAndSearchWithDouban(title) {
     if (!title) return;
-    const safeTitle = title.replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
-    if (typeof selectedAPIs !== 'undefined' && !selectedAPIs.includes('dbzy')) {
-        const doubanCheckbox = document.querySelector('input[id="api_dbzy"]');
-        if (doubanCheckbox) {
-            doubanCheckbox.checked = true;
-            if (typeof updateSelectedAPIs === 'function') updateSelectedAPIs();
-            else { selectedAPIs.push('dbzy'); localStorage.setItem('selectedAPIs', JSON.stringify(selectedAPIs));
-                   const countEl = document.getElementById('selectedApiCount'); if (countEl) countEl.textContent = selectedAPIs.length; }
-            showToast('已自动选择豆瓣资源API', 'info');
-        }
-    }
+    const safeTitle = String(title).trim();
     const input = document.getElementById('searchInput');
     if (input) {
-        input.value = safeTitle;
-        
         if (typeof navigateToTab === 'function') navigateToTab('search');
+        input.value = safeTitle;
         
         // These globals will be managed by douban_logic.js
         if (typeof activeDoubanSearchFilterTag !== 'undefined') activeDoubanSearchFilterTag = '';
@@ -64,7 +74,11 @@ async function fillAndSearchWithDouban(title) {
             resultsDiv.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4';
         }
 
-        await search(); 
+        try { await search(); }
+        catch (error) {
+            console.error('Movie search could not start:', error);
+            if (typeof showToast === 'function') showToast('搜索未能启动，请重试', 'error');
+        }
         
         if (window.innerWidth <= 768) window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -80,10 +94,10 @@ function renderDoubanMovieTvSwitch() {
         if (doubanMovieTvCurrentSwitch !== newType) {
             doubanMovieTvCurrentSwitch = newType;
             doubanCurrentTag = '热门'; 
-            movieToggle.classList.toggle('bg-pink-600', newType === 'movie');
+            movieToggle.classList.toggle('bg-sky-700', newType === 'movie');
             movieToggle.classList.toggle('text-white', newType === 'movie');
             movieToggle.classList.toggle('text-gray-300', newType !== 'movie');
-            tvToggle.classList.toggle('bg-pink-600', newType === 'tv');
+            tvToggle.classList.toggle('bg-sky-700', newType === 'tv');
             tvToggle.classList.toggle('text-white', newType === 'tv');
             tvToggle.classList.toggle('text-gray-300', newType !== 'tv');
             renderDoubanTags(); // This function itself will be in this file
@@ -128,9 +142,9 @@ function renderDoubanTags(tagsToRender = [], forceMainView = false) {
             // 如果有一个通用的“首页”或“推荐”按钮，可以在这里高亮它
             // 例如: if (tagConfig.isGeneralHomeButton) { btnClass += 'active_style'; } else { btnClass += 'inactive_style'; }
             // 目前没有这种按钮，所有标签都是非活动状态
-            btnClass += 'bg-[#1a1a1a] text-gray-300 hover:bg-pink-700 hover:text-white border-[#333] hover:border-white';
+            btnClass += 'bg-[#1a1a1a] text-gray-300 hover:bg-sky-800 hover:text-white border-[#333] hover:border-white';
         } else {
-            btnClass += tagConfig.title === currentActiveTagTitle ? 'bg-pink-600 text-white shadow-md border-white' : 'bg-[#1a1a1a] text-gray-300 hover:bg-pink-700 hover:text-white border-[#333] hover:border-white';
+            btnClass += tagConfig.title === currentActiveTagTitle ? 'bg-sky-700 text-white shadow-md border-white' : 'bg-[#1a1a1a] text-gray-300 hover:bg-sky-800 hover:text-white border-[#333] hover:border-white';
         }
         btn.className = btnClass;
         btn.textContent = tagConfig.title;
@@ -245,39 +259,38 @@ function renderDoubanCardsAsCarousel(data, carouselTrackElement, type, tagForCon
     data.subjects.forEach(item => { 
         const card = document.createElement("div");
         card.className = "flex-shrink-0 w-36 sm:w-40 bg-[#111] hover:bg-[#222] transition-all duration-300 rounded-lg overflow-hidden flex flex-col transform hover:scale-105 shadow-md hover:shadow-lg";
-        const safeTitle = item.title.replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
-        const safeRate = (item.rate || "暂无").replace(/</g, '<').replace(/>/g, '>');
-        let originalCoverUrl = item.cover || 'image/nomedia.png';
+        configureMovieCard(card, item.title);
+        const safeTitle = escapeMovieText(item.title);
+        const safeRate = escapeMovieText(item.rate ?? "暂无");
+        let originalCoverUrl = item.cover_url || item.cover || 'image/poster-placeholder.svg';
         if (originalCoverUrl && originalCoverUrl.includes('doubanio.com')) {
             originalCoverUrl = originalCoverUrl.replace(/@.*?$/, '');
         }
-        let proxiedCoverUrl = 'image/nomedia.png';
-        if (typeof PROXY_URL !== 'undefined' && PROXY_URL && item.cover) {
-            proxiedCoverUrl = PROXY_URL + encodeURIComponent(item.cover);
+        let proxiedCoverUrl = 'image/poster-placeholder.svg';
+        if (typeof PROXY_URL !== 'undefined' && PROXY_URL && (item.cover_url || item.cover)) {
+            proxiedCoverUrl = PROXY_URL + encodeURIComponent(item.cover_url || item.cover);
         }
         card.innerHTML = `
-            <div class="relative w-full aspect-[2/3] overflow-hidden cursor-pointer" onclick="fillAndSearchWithDouban('${safeTitle}')">
-                <img src="${originalCoverUrl}" alt="${safeTitle}" 
-                    class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    onerror="this.onerror=null; this.src='${proxiedCoverUrl}'; this.classList.add('object-contain');"
-                    loading="lazy" referrerpolicy="no-referrer">
+            <div class="relative w-full aspect-[2/3] overflow-hidden cursor-pointer">
+                ${createPosterImage(originalCoverUrl, item.title, 'w-full h-full object-cover transition-transform duration-300 hover:scale-105', proxiedCoverUrl)}
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div class="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
                     <span class="text-yellow-400">★</span> ${safeRate}
                 </div>
             </div>
             <div class="p-1.5 text-center bg-[#111]">
-                <button onclick="fillAndSearchWithDouban('${safeTitle}')" 
-                        class="text-xs font-medium text-white truncate w-full hover:text-pink-400 transition leading-tight"
+                <h3
+                        class="text-xs font-medium text-white truncate w-full hover:text-sky-400 transition leading-tight"
                         title="${safeTitle}">
                     ${safeTitle}
-                </button>
+                </h3>
             </div>
         `;
         fragment.appendChild(card);
     });
     carouselTrackElement.innerHTML = ""; 
     carouselTrackElement.appendChild(fragment);
+    setupCarouselControls(carouselTrackElement);
 }
 
 // Depends on: PROXY_URL (global or from config.js), fillAndSearchWithDouban (in this file)
@@ -293,33 +306,31 @@ function renderCategoryGridCards(data, gridContainer) {
     data.subjects.forEach(item => { 
         const card = document.createElement("div");
         card.className = "card-hover bg-[#111] rounded-lg overflow-hidden cursor-pointer transition-all hover:scale-[1.02] h-full shadow-sm hover:shadow-md flex flex-col";
-        const safeTitle = item.title.replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
-        const safeRate = (item.rate || "暂无").replace(/</g, '<').replace(/>/g, '>');
+        configureMovieCard(card, item.title);
+        const safeTitle = escapeMovieText(item.title);
+        const safeRate = escapeMovieText(item.rate ?? "暂无");
         // Use item.cover_url if available (from chart API), otherwise use item.cover
-        let coverImage = item.cover_url || item.cover || 'image/nomedia.png';
+        let coverImage = item.cover_url || item.cover || 'image/poster-placeholder.svg';
         if (coverImage && coverImage.includes('doubanio.com')) {
             coverImage = coverImage.replace(/@.*?$/, '');
         }
         
-        let proxiedCoverUrl = 'image/nomedia.png'; // Fallback for onerror
+        let proxiedCoverUrl = 'image/poster-placeholder.svg'; // Fallback for onerror
         // Ensure the proxy logic uses the determined coverImage
         if (typeof PROXY_URL !== 'undefined' && PROXY_URL && (item.cover_url || item.cover)) {
             proxiedCoverUrl = PROXY_URL + encodeURIComponent(item.cover_url || item.cover);
         }
 
         card.innerHTML = `
-            <div class="relative w-full aspect-[2/3] overflow-hidden" onclick="fillAndSearchWithDouban('${safeTitle}')">
-                <img src="${coverImage}" alt="${safeTitle}" 
-                     class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                     onerror="this.onerror=null; this.src='${proxiedCoverUrl}'; this.classList.add('object-contain');"
-                     loading="lazy" referrerpolicy="no-referrer">
+            <div class="relative w-full aspect-[2/3] overflow-hidden">
+                ${createPosterImage(coverImage, item.title, 'w-full h-full object-cover transition-transform duration-300 hover:scale-105', proxiedCoverUrl)}
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div class="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
                     <span class="text-yellow-400">★</span> ${safeRate}
                 </div>
             </div>
             <div class="p-2 text-center flex-grow flex flex-col justify-between bg-[#111]">
-                <h3 class="text-sm font-medium text-white truncate w-full hover:text-pink-400 transition leading-tight" title="${safeTitle}" onclick="fillAndSearchWithDouban('${safeTitle}')">
+                <h3 class="text-sm font-medium text-white truncate w-full hover:text-sky-400 transition leading-tight" title="${safeTitle}">
                     ${safeTitle}
                 </h3>
             </div>
@@ -341,33 +352,31 @@ function renderDoubanSearchResultsGrid(data, gridContainer) {
     data.subjects.forEach(item => {
         const card = document.createElement("div");
         card.className = "card-hover bg-[#111] rounded-lg overflow-hidden cursor-pointer transition-all hover:scale-[1.02] h-full shadow-sm hover:shadow-md flex flex-col";
-        const safeTitle = item.title.replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
-        const safeRate = (item.rate || "暂无").replace(/</g, '<').replace(/>/g, '>');
+        configureMovieCard(card, item.title);
+        const safeTitle = escapeMovieText(item.title);
+        const safeRate = escapeMovieText(item.rate ?? "暂无");
         // Use item.cover_url if available (from chart API), otherwise use item.cover
-        let coverImage = item.cover_url || item.cover || 'image/nomedia.png';
+        let coverImage = item.cover_url || item.cover || 'image/poster-placeholder.svg';
         if (coverImage && coverImage.includes('doubanio.com')) {
             coverImage = coverImage.replace(/@.*?$/, '');
         }
 
-        let proxiedCoverUrl = 'image/nomedia.png'; // Fallback for onerror
+        let proxiedCoverUrl = 'image/poster-placeholder.svg'; // Fallback for onerror
         // Ensure the proxy logic uses the determined coverImage
         if (typeof PROXY_URL !== 'undefined' && PROXY_URL && (item.cover_url || item.cover)) {
             proxiedCoverUrl = PROXY_URL + encodeURIComponent(item.cover_url || item.cover);
         }
 
         card.innerHTML = `
-            <div class="relative w-full aspect-[2/3] overflow-hidden" onclick="fillAndSearchWithDouban('${safeTitle}')">
-                <img src="${coverImage}" alt="${safeTitle}" 
-                     class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                     onerror="this.onerror=null; this.src='${proxiedCoverUrl}'; this.classList.add('object-contain');"
-                     loading="lazy" referrerpolicy="no-referrer">
+            <div class="relative w-full aspect-[2/3] overflow-hidden">
+                ${createPosterImage(coverImage, item.title, 'w-full h-full object-cover transition-transform duration-300 hover:scale-105', proxiedCoverUrl)}
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div class="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
                     <span class="text-yellow-400">★</span> ${safeRate}
                 </div>
             </div>
             <div class="p-2 text-center flex-grow flex flex-col justify-between bg-[#111]">
-                <h3 class="text-sm font-medium text-white truncate w-full hover:text-pink-400 transition leading-tight" title="${safeTitle}" onclick="fillAndSearchWithDouban('${safeTitle}')">
+                <h3 class="text-sm font-medium text-white truncate w-full hover:text-sky-400 transition leading-tight" title="${safeTitle}">
                     ${safeTitle}
                 </h3>
             </div>

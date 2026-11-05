@@ -1,3 +1,23 @@
+function escapeDetailHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[character]));
+}
+
+function buildDetailApiUrl(base, parameters) {
+    const url = new URL(base);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+        throw new Error('数据源地址必须是 HTTP 或 HTTPS 地址');
+    }
+    if (!/\/api\.php\/provide\/vod\/?$/i.test(url.pathname)) {
+        url.pathname = url.pathname.replace(/\/$/, '') + '/api.php/provide/vod/';
+    }
+    for (const key of ['ac', 'pg', 't', 'wd', 'ids', 'h']) url.searchParams.delete(key);
+    for (const [key, value] of Object.entries(parameters)) {
+        if (value !== '' && value !== undefined) url.searchParams.set(key, String(value));
+    }
+    url.hash = '';
+    return url.href;
+}
+
 // 显示详情 - 修改为支持自定义API
 async function showDetails(id, vod_name, sourceCode) {
     // 密码保护校验
@@ -31,12 +51,12 @@ async function showDetails(id, vod_name, sourceCode) {
             const customApi = (typeof getCustomApiInfo === 'function') ? getCustomApiInfo(customIndex) : null;
             if (!customApi) throw new Error('Custom API not found for detail request');
             const baseDetailUrl = customApi.detail || customApi.url; 
-            detailApiUrl = baseDetailUrl + API_CONFIG.detail.path + encodeURIComponent(id);
+            detailApiUrl = buildDetailApiUrl(baseDetailUrl, { ac: 'videolist', ids: id });
         } else {
             const apiSite = API_SITES[sourceCode];
             if (!apiSite) throw new Error('API site config not found for detail request');
             const baseDetailUrl = apiSite.detail || apiSite.api; 
-            detailApiUrl = baseDetailUrl + API_CONFIG.detail.path + encodeURIComponent(id);
+            detailApiUrl = buildDetailApiUrl(baseDetailUrl, { ac: 'videolist', ids: id });
         }
 
         const requestOptions = {
@@ -74,9 +94,9 @@ async function showDetails(id, vod_name, sourceCode) {
                 sourceNameDisplay = API_SITES[sourceCode].name;
             }
         }
-        const sourceNameSpan = sourceNameDisplay ? ` <span class="text-sm font-normal text-gray-400">(${(sourceNameDisplay || '').replace(/</g, '<').replace(/>/g, '>')})</span>` : '';
+        const sourceNameSpan = sourceNameDisplay ? ` <span class="text-sm font-normal text-gray-400">(${escapeDetailHtml(sourceNameDisplay)})</span>` : '';
         
-        const safeVodName = (vod_name || (videoData ? videoData.vod_name : '未知视频')).replace(/</g, '<').replace(/>/g, '>');
+        const safeVodName = escapeDetailHtml(vod_name || (videoData ? videoData.vod_name : '未知视频'));
         modalTitleEl.innerHTML = `<span class="break-words">${safeVodName}</span>${sourceNameSpan}`;
         
         // currentVideoTitle from app_globals.js
@@ -104,6 +124,8 @@ async function showDetails(id, vod_name, sourceCode) {
         
         if (parsedEpisodes.length > 0) {
             currentEpisodes = parsedEpisodes.map(ep => ep.url); // currentEpisodes from app_globals.js
+            currentEpisodeNames = parsedEpisodes.map(ep => ep.name || '');
+            localStorage.setItem('currentEpisodeNames', JSON.stringify(currentEpisodeNames));
             episodesReversed = false; // episodesReversed from app_globals.js
             modalContent.innerHTML = `
                 <div class="flex justify-end mb-2">
@@ -156,15 +178,14 @@ function renderEpisodes(vodName, sourceCode, parsedEpisodesArray) {
             realIndex = episodesReversed ? (parsedEpisodesArray.length - 1 - loopIndex) : loopIndex;
         }
 
-        const safeEpisodeUrl = (episodeData.url || '').replace(/"/g, '"');
-        const safeVodName = (vodName || '').replace(/"/g, '"');
+        const playAction = `if(typeof playVideo === 'function') playVideo(${JSON.stringify(episodeData.url || '')},${JSON.stringify(vodName || '')},${JSON.stringify(sourceCode)},${realIndex})`;
         
         const displayEpisodeText = `第${loopIndex + 1}集`;
-        const tooltipText = (episodeData.name || displayEpisodeText).replace(/</g, '<').replace(/>/g, '>');
+        const tooltipText = escapeDetailHtml(episodeData.name || displayEpisodeText);
         
         // playVideo is expected to be in player_navigation.js
         return `
-            <button id="episode-${realIndex}" onclick="if(typeof playVideo === 'function') playVideo('${safeEpisodeUrl}','${safeVodName}', '${sourceCode}', ${realIndex}); else console.error('playVideo not defined')" 
+            <button id="episode-${realIndex}" onclick="${escapeDetailHtml(playAction)}" 
                     class="px-4 py-2 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg transition-colors text-center episode-btn truncate" title="${tooltipText}">
                 ${displayEpisodeText}
             </button>
@@ -201,8 +222,8 @@ function toggleEpisodeOrder(sourceCode) {
         // A quick fix: re-parse from currentEpisodes if names are needed, or simplify renderEpisodes.
         // For now, it will re-render using currentEpisodes (URLs) and generate "第X集" as names.
         
-        // Re-creating a simplified parsedEpisodes from currentEpisodes for rendering purposes
-        const tempParsedEpisodes = currentEpisodes.map((url, index) => ({ name: `第 ${index + 1} 集`, url: url }));
+        // Re-create the provider-labelled episode objects when changing order.
+        const tempParsedEpisodes = currentEpisodes.map((url, index) => ({ name: currentEpisodeNames?.[index] || `第 ${index + 1} 集`, url }));
         episodesGrid.innerHTML = renderEpisodes(currentVideoTitle, sourceCode, tempParsedEpisodes);
     }
     

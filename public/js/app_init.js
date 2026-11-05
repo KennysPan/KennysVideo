@@ -97,10 +97,10 @@ function initializeApp() {
         const toggleDot = toggleBg ? toggleBg.nextElementSibling : null;
         if (toggleBg && toggleDot) {
             if (useNewAndOldApi) {
-                toggleBg.classList.add('bg-pink-600');
+                toggleBg.classList.add('bg-sky-700');
                 toggleDot.classList.add('translate-x-6');
             } else {
-                toggleBg.classList.remove('bg-pink-600');
+                toggleBg.classList.remove('bg-sky-700');
                 toggleDot.classList.remove('translate-x-6');
             }
         }

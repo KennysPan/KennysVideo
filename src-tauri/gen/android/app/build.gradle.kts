@@ -14,13 +14,17 @@ val tauriProperties = Properties().apply {
 }
 
 android {
-    compileSdk = 34
+    compileSdk = 35
+    // Use the same pinned NDK as the Rust build; tools remain outside the source tree.
+    ndkPath = System.getenv("NDK_HOME")
+    ndkVersion = "30.0.16248370"
     namespace = "com.libretv.app"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        // Some user-selected video sources still serve HLS over HTTP.
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "com.libretv.app"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
@@ -28,9 +32,10 @@ android {
         getByName("debug") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
             isDebuggable = true
-            isJniDebuggable = true
+            isJniDebuggable = System.getenv("KENNYS_ANDROID_KEEP_SYMBOLS") == "true"
             isMinifyEnabled = false
-            packaging {                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
+            if (System.getenv("KENNYS_ANDROID_KEEP_SYMBOLS") == "true") packaging {
+                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
                 jniLibs.keepDebugSymbols.add("*/armeabi-v7a/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86_64/*.so")

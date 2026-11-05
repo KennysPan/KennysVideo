@@ -1,0 +1,24 @@
+[Unit]
+Description=KennysVideo feedback SMTP delivery
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=kennysvideo-feedback
+Group=kennysvideo-feedback
+WorkingDirectory=/opt/kennysvideo-feedback
+EnvironmentFile=/etc/kennysvideo-feedback.env
+ExecStart=/usr/bin/python3 /opt/kennysvideo-feedback/feedback.py worker
+Restart=on-failure
+RestartSec=5
+UMask=0077
+StateDirectory=kennysvideo-feedback
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/kennysvideo-feedback
+
+[Install]
+WantedBy=multi-user.target

@@ -2,28 +2,28 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LibreTV 播放器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="js/mobile.js"></script>
+    <title>KennysVideo 播放器</title>
 
     <!-- Favicon -->
-    <link rel="icon" href="./image/retrotv_5520.png">
-    <link rel="apple-touch-icon" href="./image/retrotv_5520.png">
+    <link rel="icon" href="./image/kennys-logo.png">
+    <link rel="apple-touch-icon" href="./image/kennys-logo.png">
     <link rel="manifest" href="manifest.json">
 
     <script src="libs/tailwindcss.min.js"></script>
     <script src="js/wakelock.js"></script>
-    <script src="js/version-check.js"></script>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="css/player.css">
+    <link rel="stylesheet" href="css/bug_report.css">
 </head>
 <body>
     <header class="bg-[#111] p-4 flex items-center border-b border-[#333] gap-2 player-header">
         <div class="flex items-center min-w-0">
             <a href="#" onclick="goHomeAndClosePlayer(event)" class="flex items-center min-w-0">
-                <svg class="w-8 h-8 mr-2 text-[#00ccff] logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                </svg>
-                <h1 class="text-xl font-bold gradient-text logo-text">LibreTV</h1>
+                <img src="image/kennys-logo.jpg" alt="KennysVideo LOGO" class="w-9 h-9 mr-2 brand-icon logo-icon" width="36" height="36">
+                <h1 class="text-xl font-bold gradient-text brand-wordmark logo-text">KennysVideo</h1>
             </a>
         </div>
         <h2 id="videoTitle" class="text-xl font-semibold flex-1 text-center overflow-x-auto whitespace-nowrap truncate custom-title-scroll"></h2>
@@ -53,6 +53,14 @@
             </div>
         </div>
     </div>
+
+    <dialog id="playerAdNotice" class="player-ad-notice" aria-labelledby="playerAdNoticeTitle" aria-describedby="playerAdNoticeMessage">
+        <form method="dialog">
+            <h2 id="playerAdNoticeTitle">观看提示</h2>
+            <p id="playerAdNoticeMessage">切勿相信视频中的广告<br>请勿宣传本软件</p>
+            <button type="submit" autofocus>我知道了，继续观看</button>
+        </form>
+    </dialog>
 
     <main class="container mx-auto px-4 py-4 pb-16">
         <!-- 视频播放区 -->
@@ -103,6 +111,7 @@
                 
                 <!-- 把各种功能按钮放在右侧 - 在小屏幕上各自占一行 -->
                 <div class="flex flex-wrap justify-end gap-2">
+                    <button onclick="openBugReport()" class="px-3 py-1 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg">反馈 BUG</button>
                     <!-- 倒序排列按钮 -->
                     <button onclick="toggleEpisodeOrder()" class="px-3 py-1 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg transition-colors flex items-center space-x-1 flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" id="orderIcon" viewBox="0 0 20 20" fill="currentColor">
@@ -159,9 +168,9 @@
                         <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
-                        <span class="gradient-text font-bold">LibreTV</span>
+                        <span class="gradient-text font-bold">KennysVideo</span>
                     </div>
-                    <p class="text-gray-500 text-sm mt-2 text-center md:text-left">© 2025 LibreTV - 自由观影，畅享精彩</p>
+                    <p class="text-gray-500 text-sm mt-2 text-center md:text-left">© 2025 KennysVideo - 自由观影，畅享精彩</p>
                 </div>
                 
                 <div class="text-center md:text-right">
@@ -181,19 +190,19 @@
 
     <!-- Mobile Bottom Navigation Bar -->
     <nav id="mobileBottomNav" class="fixed bottom-0 left-0 right-0 bg-[#1a1a1a] border-t border-[#333] flex justify-around items-center h-16 z-50 md:hidden">
-        <button onclick="goHomeAndClosePlayer(event)" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-pink-600 transition-colors p-2 flex-1">
+        <button onclick="goHomeAndClosePlayer(event)" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-sky-600 transition-colors p-2 flex-1">
             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
             <span class="text-xs">首页</span>
         </button>
-        <button onclick="playPreviousEpisode()" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-pink-600 transition-colors p-2 flex-1">
+        <button onclick="playPreviousEpisode()" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-sky-600 transition-colors p-2 flex-1">
             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
             <span class="text-xs">上一集</span>
         </button>
-        <button onclick="playNextEpisode()" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-pink-600 transition-colors p-2 flex-1">
+        <button onclick="playNextEpisode()" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-sky-600 transition-colors p-2 flex-1">
             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             <span class="text-xs">下一集</span>
         </button>
-        <button onclick="toggleControlsLock()" id="mobileLockToggle" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-pink-600 transition-colors p-2 flex-1">
+        <button onclick="toggleControlsLock()" id="mobileLockToggle" class="flex flex-col items-center justify-center text-gray-400 hover:text-white active:text-sky-600 transition-colors p-2 flex-1">
             <svg id="mobileLockIcon" class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <!-- Unlocked icon path -->
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11V7a3 3 0 00-6 0v4m-3 4h12v6H6v-6z"></path>
@@ -215,6 +224,8 @@
     <script src="libs/DPlayer.min.js" crossorigin="anonymous"></script>
 
     <script src="js/config.js"></script>
+    <script src="js/bug_report_config.js"></script>
+    <script src="js/bug_report.js"></script>
     <script src="js/password.js"></script>
     <script src="js/ui.js"></script>
 
@@ -223,9 +234,10 @@
     <script src="js/player_ui_helpers.js"></script>
     <script src="js/player_utils.js"></script>
     <script src="js/player_navigation.js"></script>
+    <script src="js/player_fullscreen.js"></script>
+    <script src="js/player_interactions.js"></script>
     <script src="js/player_dplayer_handler.js"></script>
     <script src="js/player_core_logic.js"></script>
-    <script src="js/player.js"></script> <!-- This is now a placeholder, logs to console -->
 
     <script>
         // 创建全局环境变量对象

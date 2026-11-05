@@ -2,7 +2,17 @@ use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri;
+#[cfg(not(target_os = "android"))]
+use tauri::Manager;
 use once_cell::sync::Lazy; // For lazy static initialization
+mod poster_images;
+mod app_updates;
+#[cfg(not(target_os = "android"))]
+mod window_close;
+#[cfg(target_os = "android")]
+mod android_support;
+#[cfg(target_os = "windows")]
+mod system_tray;
 
 // --- API Configuration Structures ---
 
@@ -192,25 +202,6 @@ static API_PATH_DEFAULTS: Lazy<ApiPathConfig> = Lazy::new(|| ApiPathConfig {
 // --- End API Configuration Structures ---
 
 // --- New Tauri Commands for API access ---
-
-#[derive(Serialize, Deserialize, Debug)]
-struct SearchResultItem {
-    // Define fields based on what the JS expects in the 'list' array
-    // e.g., vod_id, vod_name, vod_pic, type_name, vod_remarks, etc.
-    // For now, we'll assume the body from make_http_request is a JSON string
-    // that the frontend can parse directly. If we need to process it in Rust,
-    // we'd define more specific structs here.
-    // This command will return the raw JSON string body for now.
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct SearchResponse {
-    code: u16,
-    msg: Option<String>,
-    list: serde_json::Value, // Assuming list can be any array of objects
-                             // Or define a Vec<SearchResultItem> if item structure is fixed
-}
-
 
 #[tauri::command]
 async fn search_videos(
@@ -444,6 +435,19 @@ async fn make_http_request(options: HttpRequestOptions) -> Result<HttpResponse, 
 
 // use tauri_plugin_log::{Builder, Target}; // Temporarily commented out
 
+#[tauri::command]
+#[cfg(not(target_os = "android"))]
+fn set_player_fullscreen(window: tauri::WebviewWindow, fullscreen: bool) -> Result<(), String> {
+    window.set_fullscreen(fullscreen).map_err(|error| error.to_string())
+}
+
+static STARTUP_DISCLAIMER_SHOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[tauri::command]
+fn claim_startup_disclaimer() -> bool {
+    !STARTUP_DISCLAIMER_SHOWN.swap(true, std::sync::atomic::Ordering::Relaxed)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   // let mut log_builder = Builder::default(); // Temporarily commented out
@@ -454,20 +458,73 @@ pub fn run() {
     // log_builder = log_builder.target(Target::Os); // Temporarily commented out
   // }
   
-  tauri::Builder::default()
-    // .plugin( // Temporarily commented out
-        // log_builder
-            // .level(log::LevelFilter::Debug) 
-            // .build()
-    // )
+  let builder = tauri::Builder::default();
+  #[cfg(not(any(target_os = "android", target_os = "ios")))]
+  let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+      if let Some(window) = app.get_webview_window("main") {
+          let _ = window.show();
+          let _ = window.unminimize();
+          let _ = window.set_focus();
+      }
+  }));
+  #[cfg(not(target_os = "android"))]
+  let builder = builder
+    .on_window_event(|window, event| {
+      #[cfg(target_os = "windows")]
+      if window.label() == "main" {
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+          api.prevent_close();
+          window_close::requested(window);
+        }
+      }
+    })
+    .on_page_load(|webview, payload| {
+      // Full page navigation must not leave the home/search screen in player fullscreen.
+      if matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
+        let _ = webview.window().set_fullscreen(false);
+      }
+      #[cfg(target_os = "windows")]
+      if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished) {
+        let _ = webview.eval(include_str!("../../public/js/window_close.js"));
+      }
+    })
+    ;
+  #[cfg(not(target_os = "android"))]
+  let builder = builder
     .invoke_handler(tauri::generate_handler![
         make_http_request,
-        search_videos
+        search_videos,
+        set_player_fullscreen,
+        claim_startup_disclaimer,
+        window_close::get_close_preference,
+        window_close::set_close_preference,
+        window_close::apply_close_action,
+        poster_images::fetch_poster_image,
+        app_updates::check_app_update,
+        app_updates::download_app_update,
+        app_updates::install_app_update,
+        app_updates::open_app_download_page
         // 如果您有其他 command，请在此处添加，用逗号分隔
         // e.g., another_command, yet_another_command
-    ])
-    .setup(|_app| {
-      // 可以在这里执行应用启动时的设置代码
+    ]);
+  #[cfg(target_os = "android")]
+  let builder = builder.plugin(android_support::init()).invoke_handler(tauri::generate_handler![
+      make_http_request, search_videos, claim_startup_disclaimer,
+      poster_images::fetch_poster_image, android_support::set_player_fullscreen, android_support::export_config_file,
+      app_updates::check_app_update, app_updates::download_app_update,
+      app_updates::install_app_update, app_updates::open_app_download_page
+      , android_support::get_player_controls, android_support::set_player_control
+  ]);
+  builder.setup(|app| {
+      #[cfg(not(target_os = "android"))]
+      {
+      let path = app.path().app_config_dir()?.join("close-preference.json");
+      app.manage(window_close::CloseState::load(path));
+      }
+      #[cfg(target_os = "android")]
+      let _ = app;
+      #[cfg(target_os = "windows")]
+      system_tray::setup(app)?;
       Ok(())
     })
     .run(tauri::generate_context!())

@@ -1,1 +1,11 @@
 node_modules
+dist-android/
+src-tauri/target/
+src-tauri/gen/android/app/src/main/jniLibs/
+*.jks
+*.keystore
+server/feedback/.env
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm

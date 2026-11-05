@@ -1,3 +1,21 @@
+# KennysVideo
+
+KennysVideo 是基于 [KeyRotate/LibreTV-App](https://github.com/KeyRotate/LibreTV-App) 修改的 Windows 客户端；其上游项目为 [LibreSpark/LibreTV](https://github.com/LibreSpark/LibreTV)。感谢原作者和贡献者。本修改版由 KennysPan 维护，保留原有版权声明和仓库内的 Apache License 2.0（见 [LICENSE](LICENSE)）；修改说明见 [NOTICE](NOTICE)。各第三方库保留各自的许可证。
+
+修改内容：Windows 窗口和全屏、KennysVideo 主题、影片封面加载、横向滚动控制、安装覆盖升级和启动版本检查。
+
+国内发布地址：https://gitee.com/kennysPan/kennys-video/releases/latest
+
+GitHub 备份：https://github.com/KennysPan/KennysVideo/releases/latest
+
+1.1.7 起优先通过 GitHub 检查新版，3 秒超时或请求失败自动切换 Gitee。程序内下载安装包时，GitHub 超时、卡住或持续低速也会自动切换 Gitee。SHA256 校验通过后，由用户点击安装，保留设置和观看历史。没有更新不弹窗，断网不影响使用。旧版请先安装 1.1.7。
+
+发布页提供安装包、免安装版和本修改版的源代码压缩包；源码不包含 node_modules 和 Rust target，可按 BUILDING.md 编译。
+
+---
+
+以下保留原项目说明：
+
 # LibreTV-App 📺
 
 **一个免费、跨平台的在线视频搜索与观看应用。**

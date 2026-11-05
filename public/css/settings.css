@@ -1,0 +1,104 @@
+/* One column and one control scale for every settings section. */
+#page-settings { padding-bottom: 96px; }
+#page-settings > .flex, #page-settings .settings-sections {
+    width: 100%; max-width: 736px; margin-left: auto; margin-right: auto;
+}
+#page-settings .settings-sections { display: flex; flex-direction: column; gap: 20px; }
+.settings-sections > div {
+    box-sizing: border-box; width: 100%; min-width: 0; margin: 0;
+    padding: 20px; border: 1px solid #24384a; border-radius: 12px;
+    background: #111c2a; box-shadow: none; font-size: 14px; line-height: 1.5;
+}
+.settings-sections > div > :is(label, h3), .settings-sections > div > .flex > label.block {
+    display: block; margin: 0 0 16px; padding-bottom: 12px;
+    border-bottom: 1px solid #2b3c4e; color: #dbe7ef; font-size: 16px; font-weight: 600;
+}
+.settings-sections label { font-size: 14px; }
+.settings-sections p, .settings-sections #appUpdateStatus { font-size: 13px; line-height: 1.6; }
+.settings-sections button, .settings-sections select, .settings-sections input[type="text"] {
+    box-sizing: border-box; min-height: 44px; font-size: 14px; line-height: 1.5;
+}
+.settings-sections button { padding: 10px 14px; }
+.settings-sections button[onclick="showAddCustomApiForm()"] {
+    width: 44px; min-width: 44px; padding: 0; font-size: 22px;
+}
+.settings-sections select { width: 100%; height: 44px; padding: 8px 12px; font-weight: 400; }
+.settings-sections .select-none { flex-shrink: 0; margin-left: 16px; }
+.settings-sections .toggle-bg { width: 48px; height: 24px; }
+.settings-sections .toggle-dot { width: 20px; height: 20px; }
+.settings-sections :is(button, select, input):focus-visible { outline: 2px solid #67e8f9; outline-offset: 3px; }
+@media (max-width: 520px) {
+    .settings-sections > div { padding: 16px; }
+    .settings-sections > div > .space-x-2 { display: flex; flex-wrap: wrap; gap: 8px; }
+    .settings-sections > div > .space-x-2 > button { margin-left: 0; }
+}
+/* Update dialog: fixed header and actions, independently scrollable release notes. */
+#appUpdateDialog {
+    box-sizing:border-box; width:calc(100% - 40px); max-width:780px;
+    max-height:calc(100dvh - 48px); margin:auto; padding:0; overflow:hidden;
+    color:#e6f0f6; background:#111c29; border:1px solid #2a4353; border-radius:24px;
+    box-shadow:0 24px 96px #0008; font-family:inherit; user-select:none;
+}
+#appUpdateDialog::backdrop { background:rgba(3,9,16,.73); backdrop-filter:blur(3px); }
+#appUpdateDialog [hidden], .update-background-status[hidden] { display:none !important; }
+.update-dialog-layout { display:flex; flex-direction:column; max-height:calc(100dvh - 50px); }
+.update-dialog-header { display:flex; align-items:center; gap:20px; padding:32px 36px 26px; flex-shrink:0; }
+.update-app-logo { width:60px; height:60px; object-fit:cover; border-radius:14px; flex-shrink:0; }
+.update-heading { flex:1; min-width:0; }
+#appUpdateTitle { margin:0; font-size:27px; line-height:1.3; font-weight:700; letter-spacing:-.02em; overflow-wrap:anywhere; }
+#appUpdateDialog .update-version { margin:8px 0 0; font-size:14px; line-height:1.5; color:#93a9b8; }
+.update-close { align-self:flex-start; width:36px; height:36px; border:0; border-radius:9px; padding:0; flex-shrink:0; background:transparent; color:#93a9b8; font-size:30px; line-height:1; cursor:pointer; }
+.update-close:hover { color:#e6f0f6; background:#ffffff0b; }
+#appUpdateDialog .update-release-notes { flex:1 1 auto; min-height:0; max-height:48dvh; margin:0 36px; padding:24px 12px 16px 0; border:0; border-top:1px solid #ffffff0b; border-radius:0; background:transparent; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y; scrollbar-width:thin; scrollbar-color:#3b5363 transparent; }
+.update-release-notes h3 { margin:0 0 14px; font-size:16px; line-height:1.5; font-weight:650; color:#e2edf3; }
+#appUpdateDialog .update-release-notes-body { max-height:none; overflow:visible; white-space:normal; overflow-wrap:anywhere; font-size:15px; line-height:1.85; color:#a8bdca; }
+.update-release-notes-body ul { margin:0; padding-left:22px; list-style:disc; }
+.update-release-notes-body li { margin:4px 0; padding-left:2px; }
+.update-release-notes-body p { margin:8px 0; }
+.update-release-notes-body h4 { margin:16px 0 8px; color:#d1e2eb; font-size:15px; font-weight:600; }
+.update-release-notes-body strong { color:#d1e2eb; font-weight:650; }
+.update-changelog { margin:18px 0 0; padding:2px 0; border:0; background:none; color:#4dd5e9; font:inherit; font-size:14px; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+.update-download-state { flex-shrink:0; padding:14px 36px 18px; }
+.update-intro { margin:0; color:#8fa8b9; font-size:13px; line-height:1.7; }
+#appUpdateDialog .update-progress-panel { margin:0; padding:0; border:0; border-radius:0; background:none; }
+#appUpdateDialog .update-progress-heading { margin:0 0 12px; gap:16px; }
+#appUpdateDialog .update-bytes { margin:0; font-size:14px; line-height:1.5; color:#9bb1c3; }
+#appUpdateDialog .update-percent { font-size:14px; font-weight:400; color:#a8bdca; }
+#appUpdateDialog .update-progress { height:6px; }
+#appUpdateDialog .update-source { margin:8px 0 0; color:#718e9f; font-size:12px; line-height:1.4; }
+.update-ready { display:flex; align-items:center; gap:12px; margin:0; padding:14px 16px; border-radius:12px; background:#1cbdc00b; color:#52dace; font-size:14px; line-height:1.65; }
+.update-ready > span:first-child { font-size:24px; }
+.update-error { margin:10px 0 0; color:#f7bf75; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.update-dialog-footer { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; padding:16px 28px; border-top:1px solid #ffffff0b; flex-shrink:0; }
+.update-dialog-footer button { min-height:46px; padding:11px 20px; border:1px solid #2b4354; border-radius:10px; background:#0b1520; color:#cfdee8; font:inherit; font-size:15px; font-weight:600; line-height:1.5; cursor:pointer; }
+.update-dialog-footer button:hover { background:#1b3040; }
+.update-dialog-footer button.update-download { background:linear-gradient(110deg,#29b7e5,#21c7b6); color:#041924; border-color:transparent; }
+.update-dialog-footer button.update-download:hover { background:linear-gradient(110deg,#29b7e5,#21c7b6); filter:brightness(1.1); }
+.update-dialog-footer button:disabled { opacity:.6; cursor:wait; }
+#appUpdateDialog :is(button, section):focus-visible, .update-background-status:focus-visible { outline:2px solid #67e8f9; outline-offset:3px; }
+.update-background-status { position:fixed; right:20px; bottom:calc(84px + env(safe-area-inset-bottom,0px)); z-index:1000; max-width:calc(100vw - 40px); padding:12px 18px; border:1px solid #287487; border-radius:12px; background:#112b3a; color:#7de5ee; box-shadow:0 8px 28px #0005; font:inherit; font-size:13px; cursor:pointer; }
+@media(max-height:480px) {
+    .update-dialog-header { padding:14px 24px; gap:12px; }
+    .update-app-logo { width:40px; height:40px; border-radius:9px; }
+    #appUpdateTitle { font-size:20px; }
+    #appUpdateDialog .update-version { margin-top:4px; font-size:12px; }
+    #appUpdateDialog .update-release-notes { padding-top:10px; padding-bottom:8px; }
+    .update-download-state { padding:8px 24px; }
+    .update-ready { padding:8px 12px; }
+    .update-dialog-footer { padding:10px 24px; }
+    .update-dialog-footer button { min-height:40px; padding:8px 16px; }
+}
+@media(max-width:520px) {
+    #appUpdateDialog { width:calc(100% - 24px); max-height:calc(100dvh - 24px); border-radius:18px; }
+    .update-dialog-layout { max-height:calc(100dvh - 26px); }
+    .update-dialog-header { padding:22px 18px 20px; gap:12px; }
+    .update-app-logo { width:44px; height:44px; border-radius:10px; }
+    #appUpdateTitle { font-size:20px; }
+    #appUpdateDialog .update-version { font-size:12px; margin-top:5px; }
+    .update-close { width:28px; height:28px; font-size:26px; }
+    #appUpdateDialog .update-release-notes { margin:0 20px; padding-top:18px; max-height:46dvh; }
+    #appUpdateDialog .update-release-notes-body { font-size:14px; line-height:1.8; }
+    .update-download-state { padding:12px 20px 16px; }
+    .update-dialog-footer { padding:14px 18px; gap:8px; }
+    .update-dialog-footer button { padding:10px 13px; font-size:14px; }
+}

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>KennysVideo · 反馈管理</title><link rel="stylesheet" href="/feedback-admin/admin.css"><script src="/feedback-admin/admin.js" defer></script></head>
+<body><main>
+<header><div><p class="eyebrow">KENNYSVIDEO / ADMIN</p><h1>反馈管理</h1><p>查看问题、跟进处理，让反馈更有价值。</p></div><div class="actions"><button id="changePassword" hidden>修改密码</button><button id="logout" hidden>退出登录</button></div></header>
+<p id="status" role="status" aria-live="polite"></p>
+<section id="login" class="panel login"><h2>管理员登录</h2><p>仅限维护者访问，反馈数据不会公开。</p><form id="loginForm"><label>管理密码<input id="password" type="password" required maxlength="256" autocomplete="current-password"></label><button class="primary" type="submit">登录后台</button></form></section>
+<div id="workspace" hidden>
+<nav aria-label="管理栏目"><button data-view="reports" aria-pressed="true">BUG 报告</button><button data-view="bans" aria-pressed="false">禁用管理</button><button data-view="audit" aria-pressed="false">操作记录</button><button id="refresh">刷新</button></nav>
+<div class="notice">按随机安装标识限制滥发，不封禁同一网络的其他设备。请保留正常批评；禁用操作需填写原因。</div>
+<section class="panel"><div class="section-heading"><h2 id="viewTitle">BUG 报告</h2><span id="count"></span></div><div id="items"></div><footer id="pagination"><button id="previous">上一页</button><span id="pageLabel"></span><button id="next">下一页</button></footer></section>
+</div></main>
+<dialog id="banDialog" aria-labelledby="banTitle"><form id="banForm"><h2 id="banTitle">暂时禁用反馈</h2><p>只影响该安装标识的反馈功能，其他软件功能不受影响。</p><label>禁用天数<input id="banDays" type="number" min="1" max="365" value="7" required></label><label>处理原因<textarea id="banReason" maxlength="300" required placeholder="例如：短时间重复发送无关内容"></textarea></label><p id="banError" role="status"></p><div class="actions"><button type="button" id="cancelBan">取消</button><button class="danger" type="submit">确认禁用</button></div></form></dialog>
+<dialog id="passwordDialog" aria-labelledby="passwordTitle"><form id="passwordForm"><h2 id="passwordTitle">修改管理密码</h2><p>修改后所有已登录会话都会退出，请使用新密码重新登录。</p><label>当前密码<input id="currentPassword" type="password" required maxlength="256" autocomplete="current-password"></label><label>新密码<input id="newPassword" type="password" required minlength="6" maxlength="256" autocomplete="new-password"></label><label>确认新密码<input id="confirmPassword" type="password" required minlength="6" maxlength="256" autocomplete="new-password"></label><p id="passwordError" role="status"></p><div class="actions"><button type="button" id="cancelPassword">取消</button><button class="primary" type="submit">保存新密码</button></div></form></dialog>
+</body></html>

@@ -62,10 +62,14 @@
 
 :root {
     /* 赛博影视主题配色方案 - 柔和版 */
-    --primary-color: #00ccff;       /* 霓虹蓝主色调 */
-    --primary-light: #33d6ff;       /* 浅霓虹蓝变体 */
+    --primary-color: #38bdf8;
+    --primary-light: #7dd3fc;
+    --action-start: #075985;
+    --action-end: #115e59;
+    --action-hover-start: #0369a1;
+    --action-hover-end: #0f766e;
     --secondary-color: #0f1622;     /* 深蓝黑背景色 */
-    --accent-color: #ff3c78;        /* 霓虹粉强调色 */
+    --accent-color: #2dd4bf;
     --text-color: #e6f2ff;          /* 柔和的蓝白色文本 */
     --text-muted: #8599b2;          /* 淡蓝灰色次级文本 */
     --border-color: rgba(0, 204, 255, 0.15);
@@ -84,7 +88,7 @@
     background-image: 
         linear-gradient(180deg, var(--page-gradient-start), var(--page-gradient-end)),
         radial-gradient(circle at 25px 25px, rgba(0, 204, 255, 0.04) 2px, transparent 3px),
-        radial-gradient(circle at 75px 75px, rgba(255, 60, 120, 0.02) 1px, transparent 2px),
+        radial-gradient(circle at 75px 75px, rgba(45, 212, 191, 0.02) 1px, transparent 2px),
         radial-gradient(circle at 50px 50px, rgba(150, 255, 250, 0.015) 1px, transparent 2px);
     background-blend-mode: normal;
     background-size: cover, 100px 100px, 50px 50px, 75px 75px;
@@ -153,6 +157,120 @@ button, .card-hover {
     background: linear-gradient(to right, var(--primary-color), var(--accent-color));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.brand-icon {
+    color: var(--primary-light);
+    flex-shrink: 0;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.brand-wordmark {
+    display: inline-block;
+    padding: 0.08em 0.06em 0.12em;
+    line-height: 1.15;
+    letter-spacing: -0.035em;
+    white-space: nowrap;
+}
+
+/* Explicit styling keeps WebView2 from using Windows' green/gray progress bar. */
+#appUpdateDialog .update-version {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+}
+.update-progress-panel {
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid rgba(125, 211, 252, 0.13);
+    border-radius: 12px;
+    background: rgba(7, 18, 30, 0.65);
+}
+.update-progress-panel[hidden] { display: none; }
+.update-progress-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.update-source { color: #b3c7d8; }
+.update-percent {
+    color: #7dd3fc;
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+.update-progress {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 8px;
+    border: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #223447;
+    color: #38bdf8;
+}
+.update-progress::-webkit-progress-bar {
+    background: #223447;
+    border-radius: 999px;
+}
+.update-progress::-webkit-progress-value {
+    background: linear-gradient(90deg, #38bdf8, #2dd4bf);
+    border-radius: 999px;
+}
+.update-progress::-moz-progress-bar {
+    background: linear-gradient(90deg, #38bdf8, #2dd4bf);
+    border-radius: 999px;
+}
+.update-progress:not([value]) {
+    background: linear-gradient(90deg, #223447 25%, #38bdf8 50%, #2dd4bf 60%, #223447 75%);
+    background-size: 250% 100%;
+    animation: update-progress-pending 1.6s ease-in-out infinite;
+}
+.update-progress:not([value])::-webkit-progress-bar { background: transparent; }
+.update-bytes {
+    margin-top: 12px;
+    color: #9bb1c5;
+    font-size: 12px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+}
+@keyframes update-progress-pending {
+    from { background-position: 100% 0; }
+    to { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .update-progress:not([value]) { animation: none; background-position: 50% 0; }
+}
+
+.theme-action {
+    background: linear-gradient(110deg, var(--action-start), var(--action-end));
+    border: 1px solid rgba(125, 211, 252, 0.25);
+    color: #f0f9ff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.theme-action:hover {
+    background: linear-gradient(110deg, var(--action-hover-start), var(--action-hover-end));
+    border-color: var(--primary-light);
+}
+
+.theme-action:active {
+    filter: brightness(0.9);
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible {
+    outline: 2px solid var(--primary-light);
+    outline-offset: 3px;
 }
 
 /* 改进设置面板样式 */
@@ -954,11 +1072,11 @@ html, body { /* Applied to html as well for full coverage */
 }
 
 .nav-item.active {
-    color: #DB2777; /* pink-600, or var(--accent-color) */
+    color: var(--primary-light); /* pink-600, or var(--accent-color) */
 }
 
 .nav-item.active svg {
-    stroke: #DB2777; /* pink-600 */
+    stroke: var(--primary-light); /* pink-600 */
 }
 
 /* Page Content Styling */
@@ -997,30 +1115,65 @@ html, body { /* Applied to html as well for full coverage */
 }
 
 .carousel-container {
-    /* Tailwind: overflow-x-auto pb-2 */
-    /* Ensures horizontal scrolling and some padding at the bottom for scrollbar */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -ms-overflow-style: scrollbar;
+    scrollbar-width: auto;
+    scrollbar-color: #38bdf8 #152536;
 }
 
 .carousel-container::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, and Opera */
+    display: block;
 }
 
 .carousel-container::-webkit-scrollbar {
-    height: 8px;
+    height: 12px;
 }
 .carousel-container::-webkit-scrollbar-track {
-    background: #1f2937; /* bg-gray-800 */
+    background: #152536;
     border-radius: 4px;
 }
 .carousel-container::-webkit-scrollbar-thumb {
-    background: #4b5563; /* bg-gray-600 */
+    background: #38bdf8;
     border-radius: 4px;
 }
 .carousel-container::-webkit-scrollbar-thumb:hover {
-    background: #6b7280; /* bg-gray-500 */
+    background: #7dd3fc;
 }
+
+.home-tag-section, .carousel-section {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.carousel-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.carousel-controls[hidden] { display: none; }
+
+.carousel-page-button {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #2b6171;
+    border-radius: 8px;
+    background: #112f3c;
+    color: var(--primary-light);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.carousel-page-button:hover:not(:disabled) { background: #075985; }
+.carousel-page-button:disabled { opacity: 0.35; cursor: default; }
 
 
 .carousel-track {
@@ -1051,11 +1204,11 @@ html, body { /* Applied to html as well for full coverage */
 
 /* Mobile Bottom Navigation Bar Specific Styles */
 #mobileBottomNav button.active svg {
-    stroke: #DB2777; /* pink-600 */
+    stroke: var(--primary-light); /* pink-600 */
 }
 
 #mobileBottomNav button.active span {
-    color: #DB2777; /* pink-600 */
+    color: var(--primary-light); /* pink-600 */
 }
 
 /* Add padding to the bottom of the main content area when the mobile nav is visible */
@@ -1074,15 +1227,21 @@ body.dplayer-custom-fullscreen-mode {
     overflow: hidden !important; /* 防止滚动条出现 */
 }
 
-/* 确保播放器容器在自定义全屏模式下能覆盖所有内容 */
-body.dplayer-custom-fullscreen-mode #playerContainer,
-body.dplayer-custom-fullscreen-mode .dplayer-video-wrap,
-body.dplayer-custom-fullscreen-mode .dplayer-video {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 2147483646 !important; /* 尝试使用一个非常高的 z-index */
-    background: #000 !important;
+/* Fullscreen player geometry is defined in player.css. */
+/* Desktop app chrome is not selectable; editable fields retain normal editing. */
+body, body * { -webkit-user-select: none; user-select: none; }
+input, textarea, [contenteditable="true"], [contenteditable=""], .selectable-text {
+    -webkit-user-select: text;
+    user-select: text;
 }
+img { -webkit-user-drag: none; }
+#backToTop {
+    position:fixed; right:24px; bottom:88px; width:48px; height:48px;
+    display:grid; place-items:center; z-index:40; border:1px solid #22a6c3;
+    border-radius:50%; background:#12313e; color:#a5f3fc;
+    box-shadow:0 6px 20px #0006; cursor:pointer;
+}
+#backToTop[hidden] { display:none; }
+#backToTop:hover { background:#164e63; }
+#backToTop:focus-visible { outline:2px solid #67e8f9; outline-offset:3px; }
+

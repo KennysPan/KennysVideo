@@ -37,6 +37,17 @@ npx tauri build
 生成的应用包通常位于 Tauri 构建输出目录下的 `release/bundle/macos/` 子目录中。
 
 ### Windows
+
+当前 Windows 版本为 KennysVideo 1.1.14。安装器保留旧版 `libretv` 的注册表安装标识及 `com.libretv.app` 应用标识：检测到旧版或同版本时在原目录覆盖安装，保留用户数据并迁移旧快捷方式；检测到更高版本时退出，防止降级。此检测针对通过安装包安装的版本，不能检测散放在其他文件夹中的便携版。
+
+1.1.7 起优先 GitHub，3 秒超时自动切换 Gitee，并支持程序内下载安装包、慢速换源和校验后由用户点击安装。发布流程见 `docs/updates.md`，运行 `python tests/prepareRelease.py` 生成带校验摘要的发布文件；`python tests/packageSource.py` 生成源码包。
+
+`src-tauri/installer-template.nsi` 基于 Tauri CLI 2.5.0 官方 NSIS 模板，包含上述更新策略。后续升级 Tauri CLI 时，应同步检查该模板。
+
+播放器回归检查（先安装 `playwright`，使用本机 Edge）：`node tests/playerFullscreen.cjs`。
+
+Windows 构建会自动合并 `src-tauri/tauri.windows.conf.json`：启动时显示居中的 1000×680 普通窗口，可以拖动边框调整大小，系统标题栏提供最小化、最大化/还原和关闭按钮。可修改该文件中的 `width`、`height` 调整初始尺寸。
+
 ```bash
 npx tauri build --target x86_64-pc-windows-msvc
 ```

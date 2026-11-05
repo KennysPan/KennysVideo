@@ -83,7 +83,7 @@ function addAdultAPI() {
                        class="form-checkbox h-3 w-3 text-blue-600 bg-[#222] border border-[#333] api-adult" 
                        ${checked ? 'checked' : ''} 
                        data-api="${apiKey}">
-                <label for="api_${apiKey}" class="ml-1 text-xs text-pink-400 truncate">${api.name}</label>
+                <label for="api_${apiKey}" class="ml-1 text-xs text-sky-400 truncate">${api.name}</label>
             `;
             adultdiv.appendChild(checkbox);
             
@@ -117,7 +117,7 @@ function checkAdultAPIsSelected() {
         
         yellowFilterContainer.classList.add('filter-disabled');
         if (filterDescription) {
-            filterDescription.innerHTML = '<strong class="text-pink-300">选中黄色资源站时无法启用此过滤</strong>';
+            filterDescription.innerHTML = '<strong class="text-sky-300">选中黄色资源站时无法启用此过滤</strong>';
         }
         
         const existingTooltip = yellowFilterContainer.querySelector('.filter-tooltip');
@@ -149,8 +149,8 @@ function renderCustomAPIsList() {
     customAPIs.forEach((api, index) => {
         const apiItem = document.createElement('div');
         apiItem.className = 'flex items-center justify-between p-1 mb-1 bg-[#222] rounded';
-        const textColorClass = api.isAdult ? 'text-pink-400' : 'text-white';
-        const adultTag = api.isAdult ? '<span class="text-xs text-pink-400 mr-1">(18+)</span>' : '';
+        const textColorClass = api.isAdult ? 'text-sky-400' : 'text-white';
+        const adultTag = api.isAdult ? '<span class="text-xs text-sky-400 mr-1">(18+)</span>' : '';
         const detailLine = api.detail ? `<div class="text-xs text-gray-400 truncate">detail: ${api.detail}</div>` : '';
         apiItem.innerHTML = `
             <div class="flex items-center flex-1 min-w-0">

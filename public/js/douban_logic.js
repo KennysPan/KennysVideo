@@ -167,7 +167,7 @@ async function loadNextBatchOfHomePageTags() {
         // "更多" button logic - only show if not a chart or if chart has a category view equivalent
         if (!tagConfig.isChart || (tagConfig.isChart && tagConfig.typeForCatView)) {
             const moreButton = document.createElement('button');
-            moreButton.className = 'text-sm text-pink-400 hover:text-pink-300 transition-colors';
+            moreButton.className = 'text-sm text-sky-400 hover:text-sky-300 transition-colors';
             moreButton.innerHTML = '更多 &rarr;';
             moreButton.onclick = () => {
                 // For charts, typeForCatView should be the genre name like "剧情"
@@ -568,20 +568,20 @@ function initDouban(options = {}) {
         const toggleDot = toggleBg ? toggleBg.nextElementSibling : null;
         if (toggleBg && toggleDot) {
             if (isEnabled) { 
-                toggleBg.classList.add('bg-pink-600'); 
+                toggleBg.classList.add('bg-sky-700');
                 toggleDot.classList.add('translate-x-6'); 
             } else {
-                toggleBg.classList.remove('bg-pink-600');
+                toggleBg.classList.remove('bg-sky-700');
                 toggleDot.classList.remove('translate-x-6');
             }
             doubanToggle.addEventListener('change', function(e) {
                 const isChecked = e.target.checked;
                 localStorage.setItem('doubanEnabled', isChecked);
                 if (isChecked) {
-                    toggleBg.classList.add('bg-pink-600');
+                    toggleBg.classList.add('bg-sky-700');
                     toggleDot.classList.add('translate-x-6');
                 } else {
-                    toggleBg.classList.remove('bg-pink-600');
+                    toggleBg.classList.remove('bg-sky-700');
                     toggleDot.classList.remove('translate-x-6');
                 }
                 sessionStorage.removeItem('homePageState');

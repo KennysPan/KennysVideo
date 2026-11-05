@@ -226,37 +226,32 @@ async function search() {
             const apiUrlAttr = item.api_url ? 
                 `data-api-url="${item.api_url.replace(/"/g, '"')}"` : '';
             
-            const hasCover = item.vod_pic && item.vod_pic.startsWith('http');
             
             // showDetails is expected to be in details_modal.js
             return `
                 <div class="card-hover bg-[#111] rounded-lg overflow-hidden cursor-pointer transition-all hover:scale-[1.02] h-full shadow-sm hover:shadow-md" 
                      onclick="if(typeof showDetails === 'function') showDetails('${safeId}','${safeName}','${sourceCode}'); else console.error('showDetails not defined')" ${apiUrlAttr}>
                     <div class="flex h-full">
-                        ${hasCover ? `
                         <div class="relative flex-shrink-0 search-card-img-container">
-                            <img src="${item.vod_pic}" alt="${safeName}" 
-                                 class="h-full w-full object-cover transition-transform hover:scale-110" 
-                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/300x450?text=无封面'; this.classList.add('object-contain');" 
-                                 loading="lazy">
+                            ${createPosterImage(item.vod_pic, item.vod_name || '', 'h-full w-full object-cover transition-transform hover:scale-110')}
                             <div class="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent"></div>
-                        </div>` : ''}
+                        </div>
                         
                         <div class="p-2 flex flex-col flex-grow">
                             <div class="flex-grow">
-                                <h3 class="font-semibold mb-2 break-words line-clamp-2 ${hasCover ? '' : 'text-center'}" title="${safeName}">${safeName}</h3>
+                                <h3 class="font-semibold mb-2 break-words line-clamp-2" title="${safeName}">${safeName}</h3>
                                 
-                                <div class="flex flex-wrap ${hasCover ? '' : 'justify-center'} gap-1 mb-2">
+                                <div class="flex flex-wrap gap-1 mb-2">
                                     ${(item.type_name || '').toString().replace(/</g, '<') ? 
                                       `<span class="text-xs py-0.5 px-1.5 rounded bg-opacity-20 bg-blue-500 text-blue-300">
                                           ${(item.type_name || '').toString().replace(/</g, '<')}
                                       </span>` : ''}
                                     ${(item.vod_year || '') ? 
-                                      `<span class="text-xs py-0.5 px-1.5 rounded bg-opacity-20 bg-purple-500 text-purple-300">
+                                      `<span class="text-xs py-0.5 px-1.5 rounded bg-opacity-20 bg-sky-800 text-sky-200">
                                           ${item.vod_year}
                                       </span>` : ''}
                                 </div>
-                                <p class="text-gray-400 line-clamp-2 overflow-hidden ${hasCover ? '' : 'text-center'} mb-2">
+                                <p class="text-gray-400 line-clamp-2 overflow-hidden  mb-2">
                                     ${(item.vod_remarks || '暂无介绍').toString().replace(/</g, '<')}
                                 </p>
                             </div>

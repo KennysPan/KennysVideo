@@ -87,11 +87,13 @@ function renderEpisodes() {
         const realIndex = episodesReversed ? currentEpisodes.length - 1 - indexInRenderedList : indexInRenderedList;
         const isActive = realIndex === currentEpisodeIndex;
         
+        const episodeName = (currentEpisodeNames?.[realIndex] || '').trim() || `第${realIndex + 1}集`;
+        const safeEpisodeName = String(episodeName).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         html += `
             <button id="episode-${realIndex}" 
                     onclick="playEpisode(${realIndex})" 
                     class="px-4 py-2 ${isActive ? 'episode-active' : '!bg-[#222] hover:!bg-[#333] hover:!shadow-none'} !border ${isActive ? '!border-blue-500' : '!border-[#333]'} rounded-lg transition-colors text-center episode-btn">
-                第${realIndex + 1}集
+                ${safeEpisodeName}
             </button>
         `;
     });

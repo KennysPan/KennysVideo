@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>LibreTV - 免费在线视频搜索与观看平台</title>
-    <meta name="description" content="LibreTV是一个免费的在线视频搜索平台，无广告、安全，提供来自多个视频源的内容搜索与观看服务，无需注册即可使用。">
-    <meta name="keywords" content="在线视频,免费视频,视频搜索,电影,电视剧,LibreTV">
+    <title>KennysVideo - 免费在线视频搜索与观看平台</title>
+    <script src="js/mobile.js"></script>
+    <meta name="description" content="KennysVideo是一个免费的在线视频搜索平台，无广告、安全，提供来自多个视频源的内容搜索与观看服务，无需注册即可使用。">
+    <meta name="keywords" content="在线视频,免费视频,视频搜索,电影,电视剧,KennysVideo">
     <meta name="author" content="LibreTV Team">
 
     <!-- Favicon -->
-    <link rel="icon" href="./image/retrotv_5520.png">
-    <link rel="apple-touch-icon" href="./image/retrotv_5520.png">
+    <link rel="icon" href="./image/kennys-logo.png">
+    <link rel="apple-touch-icon" href="./image/kennys-logo.png">
     <link rel="manifest" href="manifest.json">
     
     <script src="libs/tailwindcss.min.js"></script>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/bug_report.css">
+    <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body class="page-bg text-white flex flex-col min-h-screen">
     <!-- Main Content Area -->
@@ -25,13 +29,11 @@
             <header class="text-center mb-6 pt-12"> <!-- Increased bottom margin & Added top padding -->
                 <div class="flex justify-center items-center mb-2"> <!-- Reduced bottom margin -->
                     <a href="#" onclick="navigateToTab('home'); return false;" class="flex items-center">
-                        <svg class="w-8 h-8 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <!-- Slightly smaller logo -->
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                        </svg>
-                        <h1 class="text-4xl font-bold gradient-text">LibreTV</h1> <!-- Slightly smaller title -->
+                        <img src="image/kennys-logo.jpg" alt="KennysVideo LOGO" class="w-14 h-14 mr-3 brand-icon" width="56" height="56">
+                        <h1 class="text-4xl font-bold gradient-text brand-wordmark">KennysVideo</h1> <!-- Slightly smaller title -->
                     </a>
                 </div>
-                <!-- Slogan removed for a cleaner mobile home screen, or can be placed elsewhere if desired -->
+                <p id="homeUsageNotice" class="text-sm text-amber-300 mt-3">请勿宣传本软件</p>
                 <!-- <p class="text-gray-400 mb-8">自由观影，畅享精彩</p> -->
             </header>
 
@@ -42,7 +44,7 @@
                 <section class="carousel-section">
                     <div class="flex justify-between items-center mb-3 px-1">
                         <h2 class="text-xl font-semibold text-white">热门电影</h2>
-                        <button class="text-sm text-pink-400 hover:text-pink-300">查看全部 &rarr;</button>
+                        <button class="text-sm text-sky-400 hover:text-sky-300">查看全部 &rarr;</button>
                     </div>
                     <div class="carousel-container overflow-x-auto pb-2">
                         <div class="carousel-track flex space-x-3">
@@ -144,7 +146,7 @@
         <div id="page-history" class="page-content hidden container mx-auto px-4 py-8">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold gradient-text">观看历史</h3>
-                <button onclick="clearViewingHistory()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">
+                <button onclick="clearViewingHistory()" class="px-4 py-2 theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">
                     清空历史记录
                 </button>
             </div>
@@ -159,7 +161,7 @@
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold gradient-text">设置</h3>
             </div>
-            <div class="space-y-5 max-w-2xl mx-auto">
+            <div class="settings-sections mx-auto">
                  <!-- 数据源设置区域 -->
                 <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
                     <label class="block text-sm font-medium text-gray-400 mb-3 border-b border-[#333] pb-1">数据源设置</label>
@@ -203,8 +205,8 @@
                         <input type="text" id="customApiDetail" placeholder="detail地址（可选）" class="w-full bg-[#222] border border-[#333] text-white px-2 py-1 rounded mb-2" autocomplete="off">
                         <!-- 添加成人内容切换 -->
                         <div class="flex items-center mb-2">
-                            <input type="checkbox" id="customApiIsAdult" class="form-checkbox h-4 w-4 text-pink-500 bg-[#222] border border-[#333]">
-                            <label for="customApiIsAdult" class="ml-2 text-xs text-pink-400">黄色资源站</label>
+                            <input type="checkbox" id="customApiIsAdult" class="form-checkbox h-4 w-4 text-sky-500 bg-[#222] border border-[#333]">
+                            <label for="customApiIsAdult" class="ml-2 text-xs text-sky-400">黄色资源站</label>
                         </div>
                         <div class="flex space-x-2">
                             <button onclick="addCustomApi()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">添加</button>
@@ -258,8 +260,6 @@
                                 <div class="toggle-dot absolute w-5 h-5 bg-white rounded-full top-0.5 left-0.5 transition-transform duration-300 ease-in-out"></div>
                             </div>
                         </div>
-                    </div>
-
                     <!-- Douban API Mode Switch -->
                     <div class="flex items-center justify-between pt-3 border-t border-[#222] mt-3">
                         <div>
@@ -274,12 +274,27 @@
                     </div>
                 </div>
 
+                <div id="windowCloseSettings" hidden class="p-3 bg-[#151515] rounded-lg shadow-inner">
+                    <label for="windowCloseBehavior" class="block text-sm font-medium text-gray-300 mb-3">关闭按钮行为</label>
+                    <select id="windowCloseBehavior" class="w-full bg-[#172534] text-gray-200 border border-sky-800 rounded-lg px-3 py-2" style="min-height:44px">
+                        <option value="ask">每次询问</option>
+                        <option value="minimize">最小化到系统托盘</option>
+                        <option value="exit">退出程序</option>
+                    </select>
+                    <p id="windowCloseStatus" role="status" class="text-sm text-gray-400 mt-2">可随时修改已记住的选择</p>
+                </div>
                 <!-- 一般功能区域 -->
                 <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
+                    <h3 class="text-gray-400 mb-3">软件更新</h3>
+                    <p id="appUpdateStatus" role="status" class="text-sm text-gray-400 mb-3">启动后自动检查新版本</p>
+                    <button id="checkAppUpdateButton" onclick="checkAppUpdate(false)" class="px-4 py-2 rounded-lg text-sky-300 border border-sky-800">检查更新</button>
+                </div>
+                <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
                     <label class="block text-sm font-medium text-gray-400 mb-3 border-b border-[#333] pb-1">一般功能</label>
-                    <button onclick="importConfig()" class="px-4 py-2 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg mb-2">导入配置</button>
-                    <button onclick="exportConfig()" class="px-4 py-2 mb-2 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">导出配置</button>
-                    <button onclick="clearLocalStorage()" class="px-4 py-2 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">清除Cookie</button>
+                    <button onclick="openBugReport()" class="px-4 py-2 mb-2 w-full text-sky-300 border border-sky-800 rounded-lg text-sm">反馈 BUG</button>
+                    <button onclick="importConfig()" class="px-4 py-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg mb-2">导入配置</button>
+                    <button onclick="exportConfig()" class="px-4 py-2 mb-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">导出配置</button>
+                    <button onclick="clearLocalStorage()" class="px-4 py-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">清除Cookie</button>
                 </div>
             </div>
         </div>
@@ -287,7 +302,7 @@
         <!-- Tab Content: Category View (for infinite scroll) -->
         <div id="page-category-view" class="page-content hidden container mx-auto px-4 py-8">
             <div class="flex items-center mb-6">
-                <button onclick="navigateToTab(sessionStorage.getItem('previousTab') || 'home')" class="text-pink-400 hover:text-pink-300 mr-4">
+                <button onclick="navigateToTab(sessionStorage.getItem('previousTab') || 'home')" class="text-sky-400 hover:text-sky-300 mr-4">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
@@ -298,7 +313,7 @@
                 <!-- Category items will be loaded here -->
             </div>
             <div id="category-loading-spinner" class="text-center py-8 hidden">
-                <div class="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <div class="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
                 <p class="text-gray-400 mt-2">加载更多...</p>
             </div>
         </div>
@@ -337,9 +352,9 @@
                         <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
-                        <span class="gradient-text font-bold">LibreTV</span>
+                        <span class="gradient-text font-bold">KennysVideo</span>
                     </div>
-                    <p class="text-gray-500 text-sm mt-2 text-center md:text-left">© 2025 LibreTV - 自由观影，畅享精彩</p>
+                    <p class="text-gray-500 text-sm mt-2 text-center md:text-left">© 2025 KennysVideo - 自由观影，畅享精彩</p>
                 </div>
                 
                 <div class="text-center md:text-right">
@@ -375,10 +390,10 @@
     <div id="customTagModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 transition-opacity duration-300">
         <div class="bg-[#1a1a1a] p-6 rounded-lg shadow-xl w-11/12 max-w-sm border border-[#333]">
             <h3 class="text-lg font-semibold text-white mb-4">添加自定义标签</h3>
-            <input type="text" id="customTagInput" class="w-full bg-[#222] border border-[#444] text-white px-3 py-2 rounded mb-4 focus:outline-none focus:border-pink-500" placeholder="请输入标签名称...">
+            <input type="text" id="customTagInput" class="w-full bg-[#222] border border-[#444] text-white px-3 py-2 rounded mb-4 focus:outline-none focus:border-sky-500" placeholder="请输入标签名称...">
             <div class="flex justify-end space-x-3">
                 <button id="cancelCustomTagBtn" class="px-4 py-2 bg-[#333] hover:bg-[#444] text-gray-300 rounded text-sm transition-colors">取消</button>
-                <button id="confirmCustomTagBtn" class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded text-sm transition-colors">确认</button>
+                <button id="confirmCustomTagBtn" class="px-4 py-2 bg-sky-700 hover:bg-sky-800 text-white rounded text-sm transition-colors">确认</button>
             </div>
         </div>
     </div>
@@ -407,20 +422,24 @@
             <h2 class="text-2xl font-bold gradient-text mb-6 text-center">使用声明</h2>
             <div class="text-gray-300 space-y-4">
                 <p>
-                    欢迎使用 LibreTV。在开始使用前，请您了解并同意以下条款：
+                    欢迎使用 KennysVideo。在开始使用前，请您了解并同意以下条款：
                 </p>
                 <p>
-                    <strong class="text-blue-400">服务性质：</strong> LibreTV 仅提供视频搜索服务，不直接提供、存储或上传任何视频内容。所有搜索结果均来自第三方公开接口。
+                    <strong class="text-blue-400">服务性质：</strong> KennysVideo 仅提供视频搜索服务，不直接提供、存储或上传任何视频内容。所有搜索结果均来自第三方公开接口。
+                </p>
+                <p>
+                    <strong class="text-blue-400">资源与侵权反馈：</strong> 所有视频资源均来源于网络，本软件不对视频源内容负责。如有侵权，请及时通过“反馈 BUG”反映。
                 </p>
                 <p>
                     <strong class="text-blue-400">用户责任：</strong> 用户在使用本站服务时，须遵守相关法律法规，不得利用搜索结果从事侵权行为，如下载、传播未经授权的作品等。
                 </p>
                 <p>
-                    <strong class="text-blue-400">广告风险提示：</strong> 本站所有视频均来自第三方采集站，视频中出现的广告与本站无关，请勿相信或点击视频中的任何广告内容，谨防上当受骗。
+                    <strong class="text-blue-400">广告风险提示：</strong> 切勿相信视频中的广告，谨防上当受骗。视频中出现的广告与本软件无关，请勿点击广告链接或按广告指引转账。
                 </p>
+                <p><strong class="text-blue-400">使用提醒：</strong> 请勿宣传本软件。</p>
             </div>
             <div class="mt-6 flex justify-center">
-                <button id="acceptDisclaimerBtn" class="px-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300">
+                <button id="acceptDisclaimerBtn" class="px-6 py-3 theme-action text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300">
                     我已了解并接受
                 </button>
             </div>
@@ -445,7 +464,7 @@
     {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "LibreTV",
+        "name": "KennysVideo",
         "url": "https://libretv.is-an.org/",
         "description": "免费在线视频搜索与观看平台",
         "potentialAction": {
@@ -463,6 +482,8 @@
         window._jsSha256 = window.sha256;
     </script>
     <script src="js/config.js"></script>
+    <script src="js/bug_report_config.js"></script>
+    <script src="js/bug_report.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/apiUtils.js"></script>
     <script src="js/apiRequestCore.js"></script>
@@ -472,13 +493,17 @@
     <script src="js/password.js"></script>
     <script src="js/app_globals.js"></script>
     <script src="js/app_init.js"></script>
+    <script src="js/app_updates.js"></script>
+    <script src="js/back_to_top.js"></script>
     <script src="js/api_management.js"></script>
     <script src="js/app_event_listeners.js"></script>
+    <script src="js/poster_images.js"></script>
     <script src="js/search_logic.js"></script>
     <script src="js/details_modal.js"></script>
     <script src="js/player_navigation.js"></script>
     <script src="js/config_io.js"></script>
     <script src="js/douban_api.js"></script>
+    <script src="js/carousel_controls.js"></script>
     <script src="js/douban_ui.js"></script>
     <script src="js/douban_logic.js"></script>
     <script src="js/douban_filters.js"></script>
@@ -505,96 +530,6 @@
         window.__ENV__.PASSWORD = "{{PASSWORD}}";
     </script>
 
-    <!-- 版本检测脚本 -->
-    <script src="js/version-check.js"></script>
-
-    <!-- 弹窗显示脚本 -->
-    <script>
-        // 在页面加载完成后检查用户是否首次访问
-        document.addEventListener('DOMContentLoaded', function() {
-            // 检查用户是否已经看过声明
-            const hasSeenDisclaimer = localStorage.getItem('hasSeenDisclaimer');
-            
-            if (!hasSeenDisclaimer) {
-                // 显示弹窗
-                const disclaimerModal = document.getElementById('disclaimerModal');
-                disclaimerModal.style.display = 'flex';
-                
-                // 添加接受按钮事件
-                document.getElementById('acceptDisclaimerBtn').addEventListener('click', function() {
-                    // 保存用户已看过声明的状态
-                    localStorage.setItem('hasSeenDisclaimer', 'true');
-                    // 隐藏弹窗
-                    disclaimerModal.style.display = 'none';
-
-                    console.log("Disclaimer accepted. Attempting to enable and refresh Douban content via toggle event.");
-
-                    // 1. 确保 localStorage 中 doubanEnabled 为 true
-                    localStorage.setItem('doubanEnabled', 'true');
-                    console.log("Ensured doubanEnabled is 'true' in localStorage.");
-
-                    // 2. 获取豆瓣设置的开关元素
-                    const doubanToggleSwitch = document.getElementById('doubanToggle');
-                    if (doubanToggleSwitch) {
-                        // 3. 如果开关当前不是选中状态，则更新它并触发 change 事件
-                        //    这将利用现有的事件监听器来更新 localStorage 并刷新内容。
-                        if (!doubanToggleSwitch.checked) {
-                            doubanToggleSwitch.checked = true;
-                            // 手动更新UI视觉效果 (因为直接设置 .checked 不会触发所有CSS伪类相关的更新)
-                            const toggleBg = doubanToggleSwitch.nextElementSibling;
-                            const toggleDot = toggleBg ? toggleBg.nextElementSibling : null;
-                            if (toggleBg && toggleDot) {
-                                toggleBg.classList.add('bg-pink-600');
-                                toggleDot.classList.add('translate-x-6');
-                            }
-                            console.log("Douban toggle was off, set to on and dispatching change event.");
-                            doubanToggleSwitch.dispatchEvent(new Event('change', { bubbles: true }));
-                        } else {
-                            // 如果开关已经是选中状态，localStorage 也应该是 true。
-                            // 此时，可能需要直接刷新内容，因为 change 事件不会因状态未变而触发。
-                            console.log("Douban toggle already on. Ensuring home page is active and calling initDouban.");
-                            sessionStorage.removeItem('homePageState'); // Clear old state
-                            const pageHome = document.getElementById('page-home');
-                            if (pageHome) pageHome.classList.remove('hidden');
-                            document.querySelectorAll('.page-content').forEach(page => {
-                                if (page.id !== 'page-home') page.classList.add('hidden');
-                            });
-                            const navItems = document.querySelectorAll('#bottomNav .nav-item');
-                            navItems.forEach(item => {
-                                item.classList.remove('active');
-                                if (item.dataset.page === 'home') item.classList.add('active');
-                            });
-                            sessionStorage.setItem('activeTab', 'home');
-                            if (typeof initDouban === 'function') {
-                                setTimeout(function() {
-                                    initDouban({ forceMainView: true });
-                                }, 50); // Short delay
-                            }
-                        }
-                    } else {
-                        console.warn("Douban toggle switch UI element not found. Falling back to direct initDouban.");
-                        // Fallback if toggle not found: ensure home is visible and call initDouban
-                        sessionStorage.removeItem('homePageState');
-                        const pageHome = document.getElementById('page-home');
-                        if (pageHome) pageHome.classList.remove('hidden');
-                         document.querySelectorAll('.page-content').forEach(page => {
-                            if (page.id !== 'page-home') page.classList.add('hidden');
-                        });
-                        const navItems = document.querySelectorAll('#bottomNav .nav-item');
-                        navItems.forEach(item => {
-                            item.classList.remove('active');
-                            if (item.dataset.page === 'home') item.classList.add('active');
-                        });
-                        sessionStorage.setItem('activeTab', 'home');
-                        if (typeof initDouban === 'function') {
-                           setTimeout(function() {
-                                initDouban({ forceMainView: true });
-                            }, 150);
-                        }
-                    }
-                });
-            }
-        });
-    </script>
+    <script src="js/startup_disclaimer.js"></script>
 </body>
 </html>

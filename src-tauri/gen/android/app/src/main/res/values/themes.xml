@@ -1,15 +1,11 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources>
     <style name="Theme.app" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
-        <item name="android:windowFullscreen">true</item>
-        <item name="android:windowContentOverlay">@null</item>
-        <!-- Allow content to draw into display cutout areas (notches) on Android P and above -->
-        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="p">shortEdges</item>
-        <!-- Make status bar and navigation bar transparent -->
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <!-- Ensure the app's content can draw behind the system bars -->
-        <item name="android:fitsSystemWindows">false</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">#0F1622</item>
+        <item name="android:navigationBarColor">#0F1622</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="colorPrimary">#38BDF8</item>
+        <item name="colorSecondary">#2DD4BF</item>
     </style>
 </resources>

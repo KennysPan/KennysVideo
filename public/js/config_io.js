@@ -20,7 +20,7 @@ async function importConfig() {
             const config = JSON.parse(content);
             if (config.name !== 'LibreTV-Settings') throw '配置文件格式不正确'; // Corrected error throwing
             
-            // sha256 is assumed to be global or in a utility file (e.g., sha256.js)
+            // password.js supplies the shared browser SHA256 implementation.
             if (typeof sha256 !== 'function') {
                 console.error("sha256 function not found. Cannot verify config hash.");
                 throw "无法验证配置文件哈希"; // Corrected error throwing
@@ -84,11 +84,18 @@ async function exportConfig() {
         return;
     }
     config['hash'] = await sha256(JSON.stringify(config['data']));
-    saveStringAsFile(JSON.stringify(config), 'LibreTV-Settings_' + times + '.json');
+    saveStringAsFile(JSON.stringify(config), 'KennysVideo-Settings_' + times + '.json');
 }
 
 // 将字符串保存为文件
 function saveStringAsFile(content, fileName) {
+    const invoke = window.__TAURI_INTERNALS__?.invoke || window.__TAURI__?.core?.invoke;
+    if (window.KENNYS_PLATFORM === 'android' && invoke) {
+        invoke('export_config_file', {content, filename:fileName})
+            .then(saved => { if (saved && typeof showToast === 'function') showToast('配置文件已保存', 'success'); })
+            .catch(() => { if (typeof showToast === 'function') showToast('配置文件保存失败，请重试', 'error'); });
+        return;
+    }
     const blob = new Blob([content], { type: 'application/json;charset=utf-8' }); // Changed type to application/json
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

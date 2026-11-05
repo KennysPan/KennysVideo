@@ -85,7 +85,7 @@ function createFilterButton(text, filterKey, filterValue, isActive, clickHandler
     button.textContent = text;
     button.dataset.filterKey = filterKey; 
     button.dataset.filterValue = filterValue; 
-    button.className = `px-3 py-1.5 text-sm font-medium rounded-md border transition-colors duration-200 ${isActive ? 'bg-pink-600 text-white border-pink-500' : (isSpecial ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 hover:text-white')}`;
+    button.className = `px-3 py-1.5 text-sm font-medium rounded-md border transition-colors duration-200 ${isActive ? 'bg-sky-700 text-white border-sky-500' : (isSpecial ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 hover:text-white')}`;
     button.onclick = clickHandler;
     return button;
 }
@@ -450,7 +450,7 @@ function updateAllButtonActiveStates() {
             } else { 
                 isActive = (btnValue === window.currentSearchPageFilters[paramName]) || (btnName === '全部' && !window.currentSearchPageFilters[paramName]);
             }
-            btn.className = `px-3 py-1.5 text-sm font-medium rounded-md border transition-colors duration-200 ${isActive ? 'bg-pink-600 text-white border-pink-500' : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 hover:text-white'}`;
+            btn.className = `px-3 py-1.5 text-sm font-medium rounded-md border transition-colors duration-200 ${isActive ? 'bg-sky-700 text-white border-sky-500' : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600 hover:text-white'}`;
         });
     });
 }
