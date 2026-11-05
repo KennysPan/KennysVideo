@@ -1,5 +1,29 @@
 // Native commands own version comparison, source selection and verified installers.
 let checkingAppUpdate = false;
+// A fixed body blocks both vertical page scrolling and horizontal carousel swipes
+// behind the modal on Android WebView. Multiple startup modals share the lock.
+const modalScrollOwners = new Set();
+let modalScrollState;
+window.setModalScrollLock = (owner, locked) => {
+    if (locked) {
+        if (modalScrollOwners.has(owner)) return;
+        if (!modalScrollOwners.size) {
+            const body = document.body;
+            modalScrollState = {x:scrollX,y:scrollY,css:body.style.cssText,overflow:document.documentElement.style.overflow};
+            document.documentElement.style.overflow = 'hidden';
+            Object.assign(body.style,{position:'fixed',top:`-${scrollY}px`,left:`-${scrollX}px`,width:'100%',overflow:'hidden'});
+        }
+        modalScrollOwners.add(owner);
+    } else {
+        modalScrollOwners.delete(owner);
+        if (!modalScrollOwners.size && modalScrollState) {
+            const saved = modalScrollState; modalScrollState = null;
+            document.body.style.cssText = saved.css;
+            document.documentElement.style.overflow = saved.overflow;
+            window.scrollTo(saved.x,saved.y);
+        }
+    }
+};
 async function checkAppUpdate(startup = false) {
     const invoke = window.__TAURI_INTERNALS__?.invoke || window.__TAURI__?.core?.invoke;
     const status = document.getElementById('appUpdateStatus');
@@ -126,17 +150,25 @@ function showAppUpdate(result, invoke) {
         if (checkButton) checkButton.textContent = dialog.dataset.phase === 'downloading' ? '查看下载进度' : dialog.dataset.phase === 'ready' ? '查看安装更新' : dialog.dataset.phase === 'error' ? '重试更新' : '检查更新';
     }
     dialog.reopen = () => {
-        if (!dialog.open) dialog.showModal();
+        if (!dialog.open) { dialog.showModal(); window.setModalScrollLock(dialog,true); }
         syncBadge();
         (dialog.dataset.phase === 'downloading' ? background : download).focus();
     };
     dialog.dispose = () => {
         disposed = true;
+        window.setModalScrollLock(dialog,false);
         window.removeEventListener('app-update-progress', onProgress);
         badge.remove(); dialog.remove();
     };
     dialog.querySelector('.update-close').onclick = dismiss.onclick = background.onclick = () => dialog.close();
-    dialog.addEventListener('close', syncBadge);
+    dialog.addEventListener('close', () => {
+        // An immediate reopen must retain the lock when the queued close event runs.
+        if (!dialog.open) window.setModalScrollLock(dialog,false);
+        syncBadge();
+    });
+    dialog.addEventListener('touchmove', event => {
+        if (!event.target.closest('.update-release-notes')) event.preventDefault();
+    }, {passive:false});
     async function openReleasePage() {
         try { await invoke('open_app_download_page'); }
         catch { message.hidden = false; message.textContent = '无法打开浏览器，请稍后重试'; }
@@ -183,6 +215,7 @@ function showAppUpdate(result, invoke) {
         background.hidden = false; background.focus();
         progressPanel.hidden = false;
         renderProgress({stage:'connecting',source:result.source,downloaded:0,total:null});
+        let autoInstall = false;
         try {
             const downloaded = await invoke('download_app_update');
             if (disposed) return;
@@ -190,10 +223,11 @@ function showAppUpdate(result, invoke) {
             dialog.dataset.phase = 'ready';
             title.textContent = `KennysVideo ${result.latest_version} 已下载`;
             progressPanel.hidden = true; ready.hidden = false;
-            dialog.querySelector('.update-ready-text').textContent = android ? '更新已下载并通过校验，点击安装后由系统确认。' : '更新已下载并通过校验，安装时将关闭 KennysVideo。';
+            dialog.querySelector('.update-ready-text').textContent = android ? '校验通过，正在打开系统安装界面…' : '校验通过，正在打开安装包…';
             badgeText = `${result.latest_version} 已下载 · 点击安装`;
-            download.textContent = android ? '安装更新' : '关闭程序并安装';
+            download.textContent = android ? '安装更新' : '立即安装';
             dismiss.textContent = '稍后安装';
+            autoInstall = true;
         } catch {
             dialog.dataset.phase = 'error';
             title.textContent = `KennysVideo ${result.latest_version} 下载未完成`;
@@ -206,11 +240,13 @@ function showAppUpdate(result, invoke) {
         } finally {
             active = false;
             download.hidden = dismiss.hidden = false;
-            manual.hidden = dialog.dataset.phase === 'ready';
+            manual.hidden = false;
             background.hidden = true;
             syncBadge();
             if (dialog.open) download.focus();
         }
+        // The download promise resolves only after native checksum verification.
+        if (autoInstall && !disposed) await installUpdate();
     };
     document.body.append(dialog, badge);
     dialog.reopen();

@@ -196,7 +196,7 @@ async function loadNextBatchOfHomePageTags() {
 
         let data;
         // let fetchPromise; // fetchPromise will be assigned directly by fetchAndCacheDoubanData
-        const useOnlyOldApi = localStorage.getItem('doubanApiMode') !== 'true'; // Default to old API
+        const useOnlyOldApi = localStorage.getItem('doubanApiMode') === 'false';
         let cacheKeyPrefix = `doubanCache_home_${tagConfig.title.replace(/[^a-zA-Z0-9]/g, '')}_`;
 
         if (tagConfig.isChart) {
@@ -767,7 +767,7 @@ async function loadMoreCategoryItems(isInitialLoad = false) {
 
     let url;
     let usingNewAPIForCategory = false;
-    const useOnlyOldApiCategory = localStorage.getItem('doubanApiMode') !== 'true'; // Default to old API
+    const useOnlyOldApiCategory = localStorage.getItem('doubanApiMode') === 'false';
 
 
     if (!useOnlyOldApiCategory && sourceTagConfig && sourceTagConfig.useNewApi && sourceTagConfig.apiParams) {

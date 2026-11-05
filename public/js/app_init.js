@@ -1,3 +1,8 @@
+// Enable the combined Douban API mode once on upgrade, then preserve later choices.
+if (localStorage.getItem('doubanApiDefaultV2') !== 'true') {
+    localStorage.setItem('doubanApiMode', 'true');
+    localStorage.setItem('doubanApiDefaultV2', 'true');
+}
 window.addEventListener('pageshow', function(event) {
     const lastSearchQuery = sessionStorage.getItem('lastSearchQuery');
     const lastPageView = sessionStorage.getItem('lastPageView');
@@ -69,7 +74,7 @@ function initializeApp() {
         // 默认启用豆瓣功能
         localStorage.setItem('doubanEnabled', 'true');
         // 默认关闭新旧豆瓣API模式（即使用旧API）
-        localStorage.setItem('doubanApiMode', 'false');
+        localStorage.setItem('doubanApiMode', 'true');
 
         // 标记已初始化默认值
         localStorage.setItem('hasInitializedDefaults', 'true');

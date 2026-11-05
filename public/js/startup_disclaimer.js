@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!shouldShow) return;
     const modal = document.getElementById('disclaimerModal');
     modal.style.display = 'flex';
+    window.setModalScrollLock?.(modal,true);
     const accept = document.getElementById('acceptDisclaimerBtn');
-    accept.addEventListener('click', () => { modal.style.display = 'none'; }, { once: true });
+    accept.addEventListener('click', () => { modal.style.display = 'none'; window.setModalScrollLock?.(modal,false); }, { once: true });
     accept.focus();
 });
