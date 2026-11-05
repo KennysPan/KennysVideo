@@ -16,6 +16,8 @@ const assert=require('node:assert/strict');
    });
    await page.goto('http://footer.test/player.html');
    await page.addScriptTag({path:path.join(__dirname,'../public/libs/tailwindcss.min.js')});
+   await page.evaluate(()=>document.body.classList.add('test-ready'));
+   await page.waitForFunction(()=>getComputedStyle(document.querySelector('#bottomNav')).position==='fixed');
    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
    const rects=await page.evaluate(()=>({footer:document.querySelector('footer').getBoundingClientRect().bottom,nav:document.querySelector('#bottomNav').getBoundingClientRect().top}));
    assert(rects.footer<=rects.nav,JSON.stringify({viewport,...rects}));
