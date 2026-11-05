@@ -60,16 +60,16 @@ const path=require('node:path');
   assert.equal(await page.locator('#appUpdateDialog').isVisible(),false,'background completion must not interrupt playback');
   await page.locator('.update-background-status').click();
   assert.equal(await page.locator('.update-ready').isVisible(),true);
-  await page.locator('.update-download').filter({hasText:'关闭程序并安装'}).waitFor();
+  await page.locator('.update-download').filter({hasText:'立即安装'}).waitFor();
   assert.equal(await bar.getAttribute('value'),'100');
   assert.match(await page.locator('.update-bytes').innerText(),/4.0 KB \/ 4.0 KB/);
-  assert.equal(await page.evaluate(()=>calls.includes('install_app_update')),false);
+  assert.equal(await page.evaluate(()=>calls.includes('install_app_update')),true);
   await page.locator('.update-download').click();
   assert.equal(await page.evaluate(()=>calls.includes('install_app_update')),true);
   await page.keyboard.press('Escape');
   await page.locator('#appUpdateDialog').waitFor({state:'hidden'});
   assert.equal(await page.locator('#appUpdateDialog').count(),1,'dismiss retains the downloaded installer state');
-  console.log('PASS real-byte percentages, unknown length, fallback reset, checksum failure/retry, 99% before verification, 100% only on success, explicit install');
+  console.log('PASS real-byte percentages, unknown length, fallback reset, checksum failure/retry, 99% before verification, 100% only on success, automatic install');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
 

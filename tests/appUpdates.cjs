@@ -35,13 +35,13 @@ const assert = require('node:assert/strict');
                 assert.equal(await page.evaluate(()=>window.untrusted),undefined,'release text must never execute HTML');
                 assert(await page.locator('.update-release-notes').evaluate(e=>Boolean(e.compareDocumentPosition(document.querySelector('.update-progress-panel'))&Node.DOCUMENT_POSITION_FOLLOWING)));
                 await page.waitForFunction(() => !document.querySelector('.update-download').disabled);
-                assert.equal(await page.evaluate(() => window.calls.some(call => call.command === 'install_app_update')), false);
+                assert.equal(await page.evaluate(() => window.calls.some(call => call.command === 'install_app_update')), mode !== 'download_error');
                 if (mode === 'download_error') {
                     assert((await page.locator('.update-error').textContent()).includes('校验失败'));
                     assert.equal(await page.locator('.update-download').textContent(), '重试下载');
                 } else {
                     assert((await page.locator('.update-ready').textContent()).includes('校验'));
-                    assert.equal(await page.locator('.update-download').textContent(), '关闭程序并安装');
+                    assert.equal(await page.locator('.update-download').textContent(), '立即安装');
                     await page.locator('.update-download').click();
                     assert.equal(await page.evaluate(() => window.calls.at(-1).command), 'install_app_update');
                     if (mode === 'install_error') {

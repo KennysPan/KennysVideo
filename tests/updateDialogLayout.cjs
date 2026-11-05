@@ -47,7 +47,7 @@ const assert=require('node:assert/strict');
    await page.evaluate(()=>finish({source:'github',bytes:15000000}));
    await page.locator('.update-ready').waitFor({state:'visible'});
    assert.match(await page.locator('.update-download').evaluate(el=>getComputedStyle(el).backgroundImage),/linear-gradient/,'primary install action must retain its high-contrast fill');
-   assert.equal(await page.evaluate(()=>calls.includes('install_app_update')),false);
+   await page.waitForFunction(()=>calls.includes('install_app_update'));
    await page.locator('#appUpdateDialog').screenshot({path:path.join(__dirname,`../dist-windows/update-dialog-${name}-ready.png`)});
    for(const viewport of [{width:320,height:500},{width:740,height:360}]){
     await page.setViewportSize(viewport);
@@ -56,7 +56,7 @@ const assert=require('node:assert/strict');
     assert(bounds.x>=0&&bounds.y>=0&&bounds.x+bounds.width<=viewport.width+.5&&bounds.y+bounds.height<=viewport.height+.5);
     assert(footer.y+footer.height<=viewport.height,JSON.stringify({viewport,footer,bounds}));
    }
-   console.log('PASS '+name+': scrollable notes, pinned header/actions, background resume, explicit install, narrow and short layouts');
+   console.log('PASS '+name+': scrollable notes, pinned header/actions, background resume, automatic install, narrow and short layouts');
    await page.close();
   }
  }finally{await browser.close();}
