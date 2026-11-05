@@ -4,6 +4,17 @@ function setupPlayerFullscreen(player) {
     const native = typeof invoke === 'function';
     let active = false;
     let pending = Promise.resolve();
+    const android = window.KENNYS_PLATFORM === 'android';
+    // DPlayer only installs its inactivity timer on desktop; enable it for
+    // Android fullscreen as well. Touching the controller starts a new timer.
+    const restartAutoHide = () => {
+        if (android && active) player.controller.setAutoHide?.();
+    };
+    if (android) {
+        player.container.addEventListener('click', restartAutoHide);
+        player.on('play', restartAutoHide);
+        player.on('destroy', () => player.container.removeEventListener('click', restartAutoHide));
+    }
 
     function updateLayout(fullscreen) {
         active = fullscreen;
@@ -12,6 +23,7 @@ function setupPlayerFullscreen(player) {
         requestAnimationFrame(() => {
             player.resize();
             player.controller.show();
+            restartAutoHide();
         });
     }
 
