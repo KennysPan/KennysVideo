@@ -100,7 +100,7 @@ body.dplayer-custom-fullscreen-mode #player .dplayer-video {
 }
 
 /* Keep the timeline and buttons reachable even on machines with no mousemove events. */
-body.dplayer-custom-fullscreen-mode #player .dplayer-controller {
+html:not(.android-app) body.dplayer-custom-fullscreen-mode #player .dplayer-controller {
     opacity: 1 !important;
     transform: none !important;
     bottom: env(safe-area-inset-bottom, 0px);
@@ -109,7 +109,7 @@ body.dplayer-custom-fullscreen-mode #player .dplayer-controller {
 
 /* On Android fullscreen, let DPlayer's inactivity timer hide the controls.
    The desktop/native fullscreen path keeps them visible for mouse access. */
-@media (max-width: 600px) {
+@media (min-width: 0px) {
     .android-app body.dplayer-custom-fullscreen-mode #player .dplayer-controller,
     .android-app body.dplayer-custom-fullscreen-mode #player .dplayer-controller-mask {
         opacity: 0;
@@ -117,16 +117,15 @@ body.dplayer-custom-fullscreen-mode #player .dplayer-controller {
         transform: translateY(100%);
         transition: opacity .2s ease, transform .2s ease, visibility .2s;
     }
-    .android-app body.dplayer-custom-fullscreen-mode #player.dplayer-show-controller .dplayer-controller,
-    .android-app body.dplayer-custom-fullscreen-mode #player.dplayer-show-controller .dplayer-controller-mask,
-    .android-app body.dplayer-custom-fullscreen-mode #player:hover .dplayer-controller {
+    .android-app body.dplayer-custom-fullscreen-mode #player:not(.dplayer-hide-controller) .dplayer-controller,
+    .android-app body.dplayer-custom-fullscreen-mode #player:not(.dplayer-hide-controller) .dplayer-controller-mask {
         opacity: 1;
         visibility: visible;
         transform: none;
     }
 }
 
-body.dplayer-custom-fullscreen-mode #player .dplayer-controller-mask {
+html:not(.android-app) body.dplayer-custom-fullscreen-mode #player .dplayer-controller-mask {
     opacity: 1 !important;
     transform: none !important;
 }

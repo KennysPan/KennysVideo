@@ -180,7 +180,7 @@ function renderEpisodes(vodName, sourceCode, parsedEpisodesArray) {
 
         const playAction = `if(typeof playVideo === 'function') playVideo(${JSON.stringify(episodeData.url || '')},${JSON.stringify(vodName || '')},${JSON.stringify(sourceCode)},${realIndex})`;
         
-        const displayEpisodeText = `第${loopIndex + 1}集`;
+        const displayEpisodeText = escapeDetailHtml(episodeData.name || `第${realIndex + 1}集`);
         const tooltipText = escapeDetailHtml(episodeData.name || displayEpisodeText);
         
         // playVideo is expected to be in player_navigation.js
