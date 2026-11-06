@@ -4,12 +4,11 @@
 .sponsorship-header h2 { margin:0; font-size:22px; line-height:1.4; color:#67e8f9; }
 .sponsorship-header p { margin:4px 0 0; color:#91aabc; }
 .sponsorship-close { flex-shrink:0; width:44px; height:44px; padding:0; border:1px solid #365264; border-radius:10px; color:#dcebf3; background:#182b3a; font:28px Arial,sans-serif; cursor:pointer; }
-.sponsorship-close:focus-visible,.startup-sponsor-link:focus-visible { outline:2px solid #67e8f9; outline-offset:3px; }
+.sponsorship-close:focus-visible { outline:2px solid #67e8f9; outline-offset:3px; }
 .sponsorship-body { max-height:calc(100dvh - 145px); overflow-y:auto; overscroll-behavior:contain; padding:16px 24px 24px; box-sizing:border-box; }
 .sponsorship-note { margin:0 0 16px; color:#a9c0cf; }
 .sponsorship-methods { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; align-items:start; margin-bottom:20px; }
 .sponsorship-methods section { min-width:0; }
 .sponsorship-methods h3 { margin:0 0 10px; font-size:16px; color:#dcebf3; }
 .sponsorship-methods img { display:block; width:100%; height:auto; border-radius:10px; object-fit:contain; user-select:auto; -webkit-touch-callout:default; }
-.startup-notice-card > .startup-sponsor-link { flex-shrink:0; align-self:flex-end; margin:0 0 12px; padding:5px 12px; min-height:36px; border:1px solid #315368; border-radius:8px; background:#152d3b; color:#7de5ee; font:14px/1.5 Arial,"Microsoft YaHei",sans-serif; cursor:pointer; }
 @media(max-width:600px) { .sponsorship-header { padding:16px; } .sponsorship-header h2 { font-size:20px; } .sponsorship-body { padding:16px; } .sponsorship-methods { grid-template-columns:minmax(0,1fr); gap:24px; } }

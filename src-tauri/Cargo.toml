@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.1.27"
+version = "1.1.28"
 description = "KennysVideo Windows video client"
 authors = ["KennysPan"]
 license = "Apache-2.0"

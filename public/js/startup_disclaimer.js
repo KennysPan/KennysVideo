@@ -19,6 +19,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     modal.style.display = 'flex';
     window.setModalScrollLock?.(modal,true);
     const accept = document.getElementById('acceptDisclaimerBtn');
-    accept.addEventListener('click', () => { modal.style.display = 'none'; window.setModalScrollLock?.(modal,false); }, { once: true });
+    accept.addEventListener('click', () => {
+        modal.style.display = 'none';
+        // Transfer the scroll lock to sponsorship without flashing/unlocking the page.
+        try { window.openSponsorship?.(); }
+        finally { window.setModalScrollLock?.(modal,false); }
+    }, { once: true });
     accept.focus();
 });

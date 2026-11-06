@@ -19,7 +19,10 @@ const root=path.join(__dirname,'../public');
    await page.addScriptTag({path:path.join(root,'js/sponsorship.js')});
    await page.addScriptTag({path:path.join(root,'js/startup_disclaimer.js')});
    await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
-   await page.locator('.startup-sponsor-link').click();
+   assert.equal(await page.locator('.startup-sponsor-link').count(),0);
+   assert.equal(await page.locator('#sponsorshipDialog').count(),0,'not shown before accepting');
+   await page.locator('#acceptDisclaimerBtn').click();
+   assert(await page.locator('#disclaimerModal').isHidden());
    await page.locator('#sponsorshipDialog').waitFor({state:'visible'});
    assert.equal(await page.locator('#sponsorshipDialog img').count(),2);
    await page.waitForFunction(()=>[...document.querySelectorAll('#sponsorshipDialog img')].every(i=>i.complete&&i.naturalWidth>0));
@@ -30,9 +33,10 @@ const root=path.join(__dirname,'../public');
    }
    await page.screenshot({path:path.join(__dirname,`../dist-windows/sponsorship-${width}.png`)});
    await page.getByRole('button',{name:'关闭赞助窗口'}).click();
-   assert.equal(await page.evaluate(()=>document.body.style.position),'fixed','startup lock retained');
-   await page.locator('#acceptDisclaimerBtn').click();
+   await page.waitForFunction(()=>document.body.style.position==='');
    assert.equal(await page.evaluate(()=>document.body.style.position),'');
+   await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
+   assert(await page.locator('#sponsorshipDialog').isHidden(),'not repeated in the same session');
    await page.evaluate(()=>document.querySelector('#page-settings').classList.remove('hidden'));
    await page.locator('#settingsSponsorshipButton').click();
    assert(await page.locator('#sponsorshipDialog').isVisible());
@@ -48,6 +52,6 @@ const root=path.join(__dirname,'../public');
    assert.equal(await page.evaluate(()=>document.documentElement.style.overflow),'');
    await page.close();
   }
-  console.log('PASS: startup top entry, settings and player sponsorship, both original images, responsive layout, close/Escape and stacked scroll locks');
+  console.log('PASS: sponsorship opens only after accepting the notice, once per startup; settings/player entries, both images, responsive layout and lock handoff/close');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
