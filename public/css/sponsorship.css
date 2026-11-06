@@ -10,5 +10,5 @@
 .sponsorship-methods { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; align-items:start; margin-bottom:20px; }
 .sponsorship-methods section { min-width:0; }
 .sponsorship-methods h3 { margin:0 0 10px; font-size:16px; color:#dcebf3; }
-.sponsorship-methods img { display:block; width:100%; height:auto; border-radius:10px; object-fit:contain; user-select:auto; -webkit-touch-callout:default; }
+.sponsorship-methods img { display:block; width:auto; max-width:100%; height:auto; max-height:min(330px,45dvh); margin-inline:auto; border-radius:10px; object-fit:contain; user-select:auto; -webkit-touch-callout:default; }
 @media(max-width:600px) { .sponsorship-header { padding:16px; } .sponsorship-header h2 { font-size:20px; } .sponsorship-body { padding:16px; } .sponsorship-methods { grid-template-columns:minmax(0,1fr); gap:24px; } }

@@ -7,7 +7,7 @@ window.openSponsorship = function () {
         dialog.className = 'sponsorship-dialog';
         dialog.setAttribute('aria-labelledby', 'sponsorshipTitle');
         dialog.innerHTML = `
-            <header class="sponsorship-header"><div><h2 id="sponsorshipTitle">赞助列表</h2><p>感谢你支持 KennysVideo</p></div><button type="button" class="sponsorship-close" aria-label="关闭赞助窗口" autofocus>×</button></header>
+            <header class="sponsorship-header"><div><h2 id="sponsorshipTitle">赞助</h2><p>感谢你支持 KennysVideo</p></div><button type="button" class="sponsorship-close" aria-label="关闭赞助窗口" autofocus>×</button></header>
             <div class="sponsorship-body">
                 <p class="sponsorship-note">自愿赞助，量力而行。不赞助也可正常使用全部现有功能。</p>
                 <div class="sponsorship-methods">

@@ -1,8 +1,11 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $fixtureRoot = Join-Path $projectRoot 'src-tauri\target\qa-install-location24'
 New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
 $template = Get-Content -LiteralPath (Join-Path $projectRoot 'src-tauri\installer-template.nsi') -Raw -Encoding UTF8
+if (-not $template.Contains('!define DEFAULT_INSTALL_FOLDER "KennysVideo"')) { throw 'Wrong fresh-install folder name' }
+$iconCleanup = [regex]::Match($template, '(?m)^  Delete "\$INSTDIR\\KennysVideo-\*\.ico"').Value
+if (-not $iconCleanup) { throw 'Missing versioned icon cleanup' }
 $functions = [regex]::Match($template, '(?s)Function RestorePreviousInstallLocation.*?Function FindPreviousInstallLocation.*?FunctionEnd').Value
 if (-not $functions) { throw 'Missing production location restore functions' }
 # All registry operations are redirected into a disposable test namespace.
@@ -27,6 +30,17 @@ Section
  CreateDirectory "__ROOT__\旧版 有空格"
  FileOpen $0 "__ROOT__\旧版 有空格\app.exe" w
  FileClose $0
+ StrCpy $INSTDIR "__ROOT__\旧版 有空格"
+ FileOpen $0 "$INSTDIR\KennysVideo-1.1.27.ico" w
+ FileClose $0
+ FileOpen $0 "$INSTDIR\user-notes.txt" w
+ FileClose $0
+__ICON_CLEANUP__
+ IfFileExists "$INSTDIR\KennysVideo-1.1.27.ico" failed
+ IfFileExists "$INSTDIR\user-notes.txt" +2
+ Goto failed
+ IfFileExists "$INSTDIR\app.exe" +2
+ Goto failed
  SetRegView 64
  WriteRegStr HKCU "${UNINSTKEY}" "InstallLocation" '$\"__ROOT__\旧版 有空格$\"'
  StrCpy $INSTDIR "${PLACEHOLDER_INSTALL_DIR}"
@@ -62,7 +76,7 @@ Section
  SetErrorLevel $1
 SectionEnd
 '@
-$harness = $harness.Replace('__ROOT__',$fixtureRoot).Replace('__FUNCTIONS__',$functions)
+$harness = $harness.Replace('__ROOT__',$fixtureRoot).Replace('__FUNCTIONS__',$functions).Replace('__ICON_CLEANUP__',$iconCleanup)
 $harnessPath = Join-Path $fixtureRoot 'location-test.nsi'
 # Generated compiler input, not an application source edit.
 [IO.File]::WriteAllText($harnessPath,$harness,[Text.UTF8Encoding]::new($true))

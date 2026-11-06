@@ -25,10 +25,13 @@ const root=path.join(__dirname,'../public');
    assert(await page.locator('#disclaimerModal').isHidden());
    await page.locator('#sponsorshipDialog').waitFor({state:'visible'});
    assert.equal(await page.locator('#sponsorshipDialog img').count(),2);
+   assert.equal(await page.locator('#sponsorshipTitle').innerText(),'赞助');
+   assert.equal(await page.locator('#settingsSponsorshipButton').innerText(),'赞助');
    await page.waitForFunction(()=>[...document.querySelectorAll('#sponsorshipDialog img')].every(i=>i.complete&&i.naturalWidth>0));
    const box=await page.locator('#sponsorshipDialog').boundingBox();
    assert(box.x>=0&&box.y>=0&&box.x+box.width<=width&&box.y+box.height<=760);
    for(const img of await page.locator('#sponsorshipDialog img').all()){
+    assert((await img.boundingBox()).height<=331,'sponsorship images stay compact');
     assert(await img.evaluate(e=>Math.abs(e.width/e.height-e.naturalWidth/e.naturalHeight)<.01));
    }
    await page.screenshot({path:path.join(__dirname,`../dist-windows/sponsorship-${width}.png`)});
