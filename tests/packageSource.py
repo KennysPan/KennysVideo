@@ -12,7 +12,7 @@ root = Path(__file__).resolve().parents[1]
 version = __import__('json').loads((root / 'package.json').read_text(encoding='utf-8'))['version']
 if args.platform == 'android':
     version = __import__('json').loads((root / 'src-tauri/tauri.android.conf.json').read_text(encoding='utf-8'))['version']
-folders = ['public', 'src-tauri/src', 'src-tauri/icons', 'src-tauri/capabilities', 'src-tauri/gen/android', 'scripts', 'tests', 'docs', '.cargo', 'server/feedback']
+folders = ['public', 'src-tauri/src', 'src-tauri/icons', 'src-tauri/capabilities', 'src-tauri/gen/android', 'scripts', 'tests', 'docs', '.cargo', '.github/workflows', '.github/scripts', 'server/feedback']
 files = ['package.json', 'package-lock.json', 'readme.md', 'BUILDING.md', 'LICENSE', 'NOTICE', '.gitignore',
          'src-tauri/Cargo.toml', 'src-tauri/Cargo.lock', 'src-tauri/build.rs', 'src-tauri/tauri.conf.json',
          'src-tauri/tauri.windows.conf.json', 'src-tauri/tauri.android.conf.json', 'src-tauri/tauri.preview.conf.json', 'src-tauri/installer-template.nsi']
