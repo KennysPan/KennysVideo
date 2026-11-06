@@ -22,19 +22,17 @@
 </head>
 <body class="player-page">
     <header class="bg-[#111] p-4 flex items-center border-b border-[#333] gap-2 player-header">
-        <div class="flex items-center min-w-0">
-            <a href="#" onclick="goHomeAndClosePlayer(event)" class="flex items-center min-w-0">
-                <img src="image/kennys-logo.jpg" alt="KennysVideo LOGO" class="w-9 h-9 mr-2 brand-icon logo-icon" width="36" height="36">
-                <h1 class="text-xl font-bold gradient-text brand-wordmark logo-text">KennysVideo</h1>
-            </a>
-        </div>
-        <h2 id="videoTitle" class="text-xl font-semibold flex-1 text-center overflow-x-auto whitespace-nowrap truncate custom-title-scroll"></h2>
         <a href="#" id="goBack" onclick="goBack(event)" class="px-4 py-2 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg transition-colors flex items-center min-w-0 home-btn">
             <svg class="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="#ffffff" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5.25 11h15a1.5 1.5 0 1 1 0 3H5.25a1.5 1.5 0 0 1 0-3z"/>
                 <path d="M5.55 12 11.3 17.3a1.5 1.5 0 1 1-2.12 2.12L3 12l6.18-6.18a1.5 1.5 0 1 1 2.12 2.12L5.55 12z"/>
             </svg>
             <span class="home-btn-text">上一页</span>
+        </a>
+        <h2 id="videoTitle" class="text-xl font-semibold flex-1 text-center overflow-x-auto whitespace-nowrap truncate custom-title-scroll"></h2>
+        <a href="#" onclick="goHomeAndClosePlayer(event)" class="player-header-brand flex items-center min-w-0" aria-label="KennysVideo 首页">
+            <h1 class="text-xl font-bold gradient-text brand-wordmark logo-text">KennysVideo</h1>
+            <img src="image/kennys-logo.jpg" alt="KennysVideo LOGO" class="w-9 h-9 brand-icon logo-icon" width="36" height="36">
         </a>
     </header>
 
@@ -165,7 +163,7 @@
     <footer class="footer mt-2 py-6 border-t border-[#333] bg-[#0a0a0a]">
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
+                <div class="player-footer-brand mb-4 md:mb-0">
                     <div class="flex items-center justify-center md:justify-start">
                         <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>

@@ -19,11 +19,12 @@ const assert=require('node:assert/strict');
    await page.evaluate(()=>document.body.classList.add('test-ready'));
    await page.waitForFunction(()=>getComputedStyle(document.querySelector('#bottomNav')).position==='fixed');
    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
-   const rects=await page.evaluate(()=>({footer:document.querySelector('footer').getBoundingClientRect().bottom,nav:document.querySelector('#bottomNav').getBoundingClientRect().top}));
-   assert(rects.footer<=rects.nav,JSON.stringify({viewport,...rects}));
+   const rects=await page.evaluate(()=>({footer:document.querySelector('footer').getBoundingClientRect().bottom,viewport:innerHeight}));
+   assert(rects.footer<=rects.viewport+1,JSON.stringify({viewport,...rects}));
+   assert(await page.locator('#bottomNav').isHidden());
    await page.screenshot({path:path.join(__dirname,`../dist-windows/footer-fixed-${viewport.width}.png`)});
    await page.close();
   }
-  console.log('PASS: complete player footer remains above bottom navigation at desktop, short-window and mobile sizes');
+  console.log('PASS: complete player footer can scroll into view without a bottom navigation overlay');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
