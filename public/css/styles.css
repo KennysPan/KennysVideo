@@ -1071,6 +1071,18 @@ html, body { /* Applied to html as well for full coverage */
     cursor: pointer;
 }
 
+/* Navigation focus should not draw a rectangular frame around the whole tab. */
+#bottomNav .nav-item:focus,
+#bottomNav .nav-item:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+#bottomNav .nav-item:focus-visible span {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
 .nav-item.active {
     color: var(--primary-light); /* pink-600, or var(--accent-color) */
 }
