@@ -1,0 +1,228 @@
+name: Release Build & Upload
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Trusted full-source branch or commit
+        default: release-automation
+        required: true
+        type: string
+      publish:
+        description: Publish a NEW release (false = validation artifacts only)
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.source_ref }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      commit: ${{ steps.meta.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
+      - id: meta
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/release_preflight.py
+          echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  desktop:
+    needs: prepare
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+          - os: macos-15-intel
+            name: macos-intel
+          - os: macos-15
+            name: macos-arm
+          - os: ubuntu-24.04
+            name: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - if: matrix.name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - if: matrix.name == 'windows'
+        run: npm run tauri -- build --bundles nsis
+      - if: startsWith(matrix.name, 'macos-')
+        run: npm run tauri -- build --bundles app,dmg
+        env:
+          APPLE_SIGNING_IDENTITY: '-'
+      - if: matrix.name == 'linux'
+        run: npm run tauri -- build --bundles deb,appimage
+      - name: Stage Windows
+        if: matrix.name == 'windows'
+        shell: pwsh
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          New-Item -ItemType Directory ci-output -Force | Out-Null
+          Copy-Item src-tauri/target/release/app.exe "ci-output/KennysVideo-$env:APP_VERSION-x64.exe"
+          Copy-Item "src-tauri/target/release/bundle/nsis/KennysVideo_$($env:APP_VERSION)_x64-setup.exe" "ci-output/KennysVideo-$env:APP_VERSION-x64-setup.exe"
+      - name: Stage macOS
+        if: startsWith(matrix.name, 'macos-')
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+          PLATFORM: ${{ matrix.name }}
+        run: |
+          mkdir -p ci-output
+          cp src-tauri/target/release/bundle/dmg/*.dmg "ci-output/KennysVideo-$APP_VERSION-$PLATFORM.dmg"
+      - name: Stage Linux
+        if: matrix.name == 'linux'
+        run: |
+          mkdir -p ci-output
+          cp src-tauri/target/release/bundle/deb/*.deb ci-output/
+          cp src-tauri/target/release/bundle/appimage/*.AppImage ci-output/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.name }}
+          path: ci-output/*
+          if-no-files-found: error
+          retention-days: 7
+  android:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+      - name: Restore and validate existing signing key
+        env:
+          ANDROID_SIGNING_KEY_JKS_BASE64: ${{ secrets.ANDROID_SIGNING_KEY_JKS_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for key in ANDROID_SIGNING_KEY_JKS_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            test -n "${!key}" || { echo "::error::Required secret $key is missing"; exit 1; }
+          done
+          umask 077
+          printf '%s' "$ANDROID_SIGNING_KEY_JKS_BASE64" | base64 --decode > "$RUNNER_TEMP/kennys-signing.keystore"
+          test -s "$RUNNER_TEMP/kennys-signing.keystore"
+          keytool -exportcert -keystore "$RUNNER_TEMP/kennys-signing.keystore" -alias "$ANDROID_KEY_ALIAS" -storepass:env ANDROID_KEYSTORE_PASSWORD -file "$RUNNER_TEMP/kennys-cert.der"
+          echo '965971a372fcbbef3a7e2d540cb58664dc671e771ea016f8cb439e683b215d3a  '"$RUNNER_TEMP/kennys-cert.der" | sha256sum --check
+          echo "ANDROID_SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/kennys-signing.keystore" >> "$GITHUB_ENV"
+      - name: Install pinned Android tools
+        run: |
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;30.0.16248370'
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+      - run: npm ci
+      - name: Build existing Android project without reinitializing native code
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x src-tauri/gen/android/gradlew
+          npm run tauri -- android build --apk --target aarch64 x86_64 --ci
+      - name: Verify signed APK and version
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          APK='src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk'
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | tee "$RUNNER_TEMP/apk-certificate.txt"
+          grep -F '965971a372fcbbef3a7e2d540cb58664dc671e771ea016f8cb439e683b215d3a' "$RUNNER_TEMP/apk-certificate.txt"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "name='com.libretv.app'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "versionName='$APP_VERSION'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "native-code: 'arm64-v8a' 'x86_64'" "$RUNNER_TEMP/apk-badging.txt"
+          cp "$APK" "ci-output/KennysVideo-$APP_VERSION-android.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-android
+          path: ci-output/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove runner-local signing materials
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/kennys-signing.keystore" "$RUNNER_TEMP/kennys-cert.der"
+  package:
+    needs: [prepare, desktop, android]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          path: ci-output
+          merge-multiple: true
+      - name: Package source and update feeds
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist-windows dist-android
+          cp ci-output/*-x64.exe ci-output/*-x64-setup.exe dist-windows/
+          cp ci-output/*-android.apk dist-android/
+          python3 tests/packageSource.py
+          python3 tests/prepareRelease.py
+          python3 tests/prepareAndroidRelease.py
+          python3 tests/releaseChecksums.py
+          cp dist-windows/* dist-android/android-update.json ci-output/
+          cd ci-output
+          sha256sum --check "KennysVideo-$APP_VERSION-SHA256SUMS.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-release-${{ needs.prepare.outputs.version }}
+          path: ci-output/*
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish only NEW releases after every build passes
+        if: github.event_name == 'push' || inputs.publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        run: |
+          set -euo pipefail
+          TAG="v$APP_VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo '::error::Existing releases are never overwritten. Validate with publish=false or use a new version.'
+            exit 1
+          fi
+          gh release create "$TAG" --target "$SOURCE_COMMIT" --draft --title "KennysVideo $APP_VERSION · Windows / Android" --notes-file "dist-windows/KennysVideo-$APP_VERSION-release-notes.md"
+          gh release upload "$TAG" ci-output/*
+          gh release edit "$TAG" --draft=false --latest
