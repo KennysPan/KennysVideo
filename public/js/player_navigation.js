@@ -67,6 +67,7 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0, playbackPosition
 
 // 弹出播放器页面 (修改为标准页面导航)
 function showVideoPlayer(url) {
+    try { window.capturePlayerReturn?.(); } catch (error) { console.warn('Optional return state not saved', error); }
     console.log('[AppNavigation] Navigating to player URL:', url);
     window.location.href = url;
 }

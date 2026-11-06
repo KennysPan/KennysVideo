@@ -100,6 +100,7 @@ async function initializePageContent() {
 
     if (videoUrl) {
         await confirmPlayerAdNotice();
+        window.resetPlayerPageTop?.();
         if(typeof initPlayer === 'function') initPlayer(videoUrl, sourceCode);
     } else {
         if(typeof showError === 'function') showError('无效的视频链接');

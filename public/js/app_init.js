@@ -141,7 +141,7 @@ function initializeApp() {
         console.log('[InitializeApp] Active tab is SEARCH, and last view was search results. Restoring search:', lastSearchQuery);
         document.getElementById('searchInput').value = lastSearchQuery;
         if (typeof search === 'function') {
-            search();
+            if (!window.restorePlayerSearchReturn?.()) search();
         } else {
             console.error("search function not found");
         }
