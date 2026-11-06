@@ -1,973 +1,228 @@
 name: Release Build & Upload
-
 on:
   push:
-    tags:
-      - 'v*' # Triggers the workflow on version tags (e.g., v1.0.0, v0.1.2)
-
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Trusted full-source branch or commit
+        default: release-automation
+        required: true
+        type: string
+      publish:
+        description: Publish a NEW release (false = validation artifacts only)
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.source_ref }}
+  cancel-in-progress: false
 jobs:
-  create_release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # Required to create a release
+  prepare:
+    runs-on: ubuntu-24.04
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      release_id: ${{ steps.create_release.outputs.id }}
+      version: ${{ steps.meta.outputs.version }}
+      commit: ${{ steps.meta.outputs.commit }}
     steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: false          # Set to true if you want to manually publish the release
-          prerelease: false     # Set to true if this is a pre-release
-
-  build_tauri_desktop:
-    name: Build Tauri Desktop Apps
-    needs: create_release
-    permissions:
-      contents: write # Required to upload assets to the release
+          ref: ${{ inputs.source_ref || github.ref }}
+      - id: meta
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/release_preflight.py
+          echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  desktop:
+    needs: prepare
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os_desc: macos-intel
-            platform: macos-13 # Intel-based macOS runner (Monterey)
-          - os_desc: macos-arm
-            platform: macos-14 # ARM-based macOS runner (Sonoma) - Apple Silicon
-          - os_desc: ubuntu-latest
-            platform: ubuntu-latest
-          - os_desc: windows-latest
-            platform: windows-latest
-    runs-on: ${{ matrix.platform }}
-
+          - os: windows-latest
+            name: windows
+          - os: macos-15-intel
+            name: macos-intel
+          - os: macos-15
+            name: macos-arm
+          - os: ubuntu-24.04
+            name: linux
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Update version in tauri.conf.json and Cargo.toml
-        run: |
-          # Extract version from tag (e.g., v1.0.44 -> 1.0.44)
-          APP_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          echo "Using App Version: $APP_VERSION"
-          
-          # Update tauri.conf.json
-          # Using jq for robust JSON manipulation if available, otherwise sed
-          if command -v jq &> /dev/null
-          then
-            jq ".version = \"$APP_VERSION\"" src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
-            echo "Updated version in src-tauri/tauri.conf.json to $APP_VERSION using jq"
-          else
-            # Fallback to sed if jq is not available (less robust for complex JSON)
-            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$APP_VERSION\"/" src-tauri/tauri.conf.json
-            echo "Updated version in src-tauri/tauri.conf.json to $APP_VERSION using sed (check for .bak file if issues)"
-          fi
-          
-          # Update Cargo.toml
-          # Using sed for TOML as it's simpler for this specific change
-          sed -i.bak "s/^version = \".*\"/version = \"$APP_VERSION\"/" src-tauri/Cargo.toml
-          echo "Updated version in src-tauri/Cargo.toml to $APP_VERSION using sed (check for .bak file if issues)"
-        shell: bash
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: '18' # Specify your project's Node.js version
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/setup-node@v4
         with:
-          toolchain: stable # You can specify a specific Rust version if needed
-
-      # Install Linux dependencies
-      # macOS and Windows dependencies are usually handled by Tauri/system or pre-installed on runners
-      - name: Install Linux dependencies (GTK, WebKit, AppIndicator, rsvg, FUSE, GStreamer, packaging tools, etc.)
-        if: matrix.platform == 'ubuntu-latest'
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - if: matrix.name == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            librsvg2-bin \
-            patchelf \
-            libfuse2 \
-            desktop-file-utils \
-            libgstreamer1.0-dev \
-            libgstreamer-plugins-base1.0-dev \
-            gstreamer1.0-plugins-good \
-            gstreamer1.0-plugins-bad \
-            gstreamer1.0-libav \
-            libgdk-pixbuf2.0-bin \
-            squashfs-tools \
-            file \
-            xdg-utils \
-            appstream-util \
-            ca-certificates \
-            curl \
-            wget \
-            libssl-dev
-
-      - name: Install frontend dependencies
-        run: npm install # Or yarn install, or pnpm install
-
-      - name: Build Tauri application (Windows/Linux using tauri-action)
-        if: matrix.os_desc == 'ubuntu-latest' || matrix.os_desc == 'windows-latest'
-        uses: tauri-apps/tauri-action@v0
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - if: matrix.name == 'windows'
+        run: npm run tauri -- build --bundles nsis
+      - if: startsWith(matrix.name, 'macos-')
+        run: npm run tauri -- build --bundles app,dmg
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseId: ${{ needs.create_release.outputs.release_id }}
-          projectPath: '.'
-
-      - name: Build, Ad-hoc Sign, and Package macOS App
-        if: matrix.os_desc == 'macos-intel' || matrix.os_desc == 'macos-arm'
+          APPLE_SIGNING_IDENTITY: '-'
+      - if: matrix.name == 'linux'
+        run: npm run tauri -- build --bundles deb,appimage
+      - name: Stage Windows
+        if: matrix.name == 'windows'
+        shell: pwsh
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          echo "Starting macOS specific build process for ${{ matrix.os_desc }} on runner arch ${{ runner.arch }}..."
-          # Build the .app bundle
-          echo "Running npx tauri build..."
-          # npm run build # Removed as it caused "Missing script: build" error. 
-          # Assuming npx tauri build handles frontend or it's prebuilt.
-          npx tauri build
-          
-          APP_NAME_RAW=$(jq -r ".productName" src-tauri/tauri.conf.json)
-          # Replace spaces with hyphens for some file system uses if necessary, but .app names can have spaces
-          # APP_NAME_FS=$(echo "$APP_NAME_RAW" | sed 's/ /-/g') 
-          APP_PATH="src-tauri/target/release/bundle/macos/${APP_NAME_RAW}.app"
-          
-          if [ ! -d "$APP_PATH" ]; then
-            echo "Error: ${APP_PATH} not found after tauri build!"
-            ls -R src-tauri/target/release/bundle/macos/
-            exit 1
-          fi
-          echo ".app bundle found at ${APP_PATH}"
-
-          # Ad-hoc sign the .app bundle
-          echo "Ad-hoc signing ${APP_PATH}..."
-          codesign -s - --force --deep --options runtime "${APP_PATH}"
-          echo "Ad-hoc signing complete."
-
-          # Install create-dmg
-          echo "Installing create-dmg..."
-          # Check if brew is available, otherwise use npm
-          if command -v brew &> /dev/null
-          then
-              brew install create-dmg
-          else
-              sudo npm install -g create-dmg
-          fi
-          echo "create-dmg installed."
-
-          # Create the .dmg
-          DMG_OUTPUT_DIR="src-tauri/target/release/bundle/dmg"
-          mkdir -p "${DMG_OUTPUT_DIR}"
-          DMG_NAME="${APP_NAME_RAW}-${{ github.ref_name }}-${{ runner.arch }}.dmg"
-          DMG_PATH="${DMG_OUTPUT_DIR}/${DMG_NAME}"
-          
-          echo "Creating DMG: ${DMG_PATH} from ${APP_PATH}"
-          create-dmg \
-            --volname "${APP_NAME_RAW} ${{ github.ref_name }}" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --icon-size 100 \
-            --icon "${APP_NAME_RAW}.app" 200 190 \
-            --hide-extension "${APP_NAME_RAW}.app" \
-            --app-drop-link 600 185 \
-            "${DMG_PATH}" \
-            "${APP_PATH}"
-          
-          if [ ! -f "$DMG_PATH" ]; then
-            echo "Error: DMG file ${DMG_PATH} not created!"
-            exit 1
-          fi
-          echo "DMG created successfully at ${DMG_PATH}"
-          ls -lh "${DMG_PATH}"
-
-          # Upload the .dmg artifact
-          echo "Uploading ${DMG_NAME}..."
-          gh release upload ${{ github.ref_name }} "${DMG_PATH}" --clobber
-          echo "DMG uploaded."
+          New-Item -ItemType Directory ci-output -Force | Out-Null
+          Copy-Item src-tauri/target/release/app.exe "ci-output/KennysVideo-$env:APP_VERSION-x64.exe"
+          Copy-Item "src-tauri/target/release/bundle/nsis/KennysVideo_$($env:APP_VERSION)_x64-setup.exe" "ci-output/KennysVideo-$env:APP_VERSION-x64-setup.exe"
+      - name: Stage macOS
+        if: startsWith(matrix.name, 'macos-')
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build_tauri_android_release:
-    name: Build Tauri Android App (Release)
-    needs: create_release
-    permissions:
-      contents: write # Required to upload assets to the release
-    runs-on: ubuntu-latest # Android builds are typically done on Linux runners
-
-    env:
-      # These secrets must be set in your GitHub repository settings
-      TAURI_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      TAURI_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      # TAURI_ANDROID_KEYSTORE_PATH will be set dynamically in a step below
-
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+          PLATFORM: ${{ matrix.name }}
+        run: |
+          mkdir -p ci-output
+          cp src-tauri/target/release/bundle/dmg/*.dmg "ci-output/KennysVideo-$APP_VERSION-$PLATFORM.dmg"
+      - name: Stage Linux
+        if: matrix.name == 'linux'
+        run: |
+          mkdir -p ci-output
+          cp src-tauri/target/release/bundle/deb/*.deb ci-output/
+          cp src-tauri/target/release/bundle/appimage/*.AppImage ci-output/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.name }}
+          path: ci-output/*
+          if-no-files-found: error
+          retention-days: 7
+  android:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Update version in tauri.conf.json and Cargo.toml
-        run: |
-          # Extract version from tag (e.g., v1.0.44 -> 1.0.44)
-          APP_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          echo "Using App Version: $APP_VERSION"
-          
-          # Update tauri.conf.json
-          if command -v jq &> /dev/null
-          then
-            jq ".version = \"$APP_VERSION\"" src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
-            echo "Updated version in src-tauri/tauri.conf.json to $APP_VERSION using jq"
-          else
-            sed -i.bak "s/\"version\": \".*\"/\"version\": \"$APP_VERSION\"/" src-tauri/tauri.conf.json
-            echo "Updated version in src-tauri/tauri.conf.json to $APP_VERSION using sed (check for .bak file if issues)"
-          fi
-          
-          # Update Cargo.toml
-          sed -i.bak "s/^version = \".*\"/version = \"$APP_VERSION\"/" src-tauri/Cargo.toml
-          echo "Updated version in src-tauri/Cargo.toml to $APP_VERSION using sed (check for .bak file if issues)"
-        shell: bash
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: '18' # Specify your project's Node.js version
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/setup-node@v4
         with:
-          toolchain: stable
-
-      - name: Install Android Rust targets
-        run: |
-          rustup target add aarch64-linux-android
-          rustup target add armv7-linux-androideabi
-          rustup target add i686-linux-android
-          rustup target add x86_64-linux-android
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'temurin' # A popular distribution
-
-      - name: Setup Android SDK and NDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          # To install a specific NDK version, include it in the packages list
-          packages: 'ndk;25.2.9519653 platform-tools' # NDK r25c and platform-tools
-          # This action will also set up a default Android SDK platform and build-tools.
-          # It sets ANDROID_HOME and ANDROID_NDK_HOME environment variables.
-
-      - name: Set NDK_HOME globally
-        run: |
-          echo "NDK_HOME=${ANDROID_NDK_HOME}" >> $GITHUB_ENV
-          echo "NDK_HOME has been set globally to: ${ANDROID_NDK_HOME}"
-
-      # tauri-action and tauri-cli's android build process typically handles Java/Android SDK setup.
-      # If issues arise, specific setup steps for Java (actions/setup-java) and Android SDK
-      # (e.g., android-actions/setup-android or manual installation) might be needed.
-
-      - name: Install Android build dependencies (glib, gtk, pkg-config, libsoup, javascriptcore)
-        run: |
-          sudo apt-get update
-          # Note: libwebkit2gtk-4.1-dev removed as it's likely only needed for desktop builds.
-          # If Android build itself fails due to this, it might indicate a more complex issue.
-          sudo apt-get install -y libglib2.0-dev libgtk-3-dev pkg-config libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
-
-      # PKG_CONFIG_PATH setup removed as it was related to libwebkit2gtk-4.1-dev
-
-      - name: Install frontend dependencies
-        run: npm install # Or yarn install, or pnpm install
-
-      - name: Clean up potentially problematic custom Android resources
-        run: |
-          echo "Attempting to remove custom AndroidManifest.xml and themes.xml..."
-          rm -f src-tauri/res/android/AndroidManifest.xml
-          rm -f src-tauri/res/android/values/themes.xml
-          # Optionally, also remove colors.xml if it's not essential or might be problematic
-          # rm -f src-tauri/res/android/values/colors.xml
-          echo "Cleanup of custom Android resources complete."
-        shell: bash
-
-      - name: Debug before Generate App Icons
-        run: |
-          echo "--- Debug: Before Generate App Icons ---"
-          echo "Listing project root:"
-          ls -la
-          echo "Checking for src-tauri/icons/:"
-          ls -la src-tauri/icons/ || echo "src-tauri/icons/ not found or empty."
-          echo "Checking for existing Android mipmap dirs (before tauri icon):"
-          ls -R src-tauri/gen/android/app/src/main/res/mipmap* || echo "No mipmap directories found yet in src-tauri/gen/android/app/src/main/res/"
-          echo "--- End Debug ---"
-        shell: bash
-
-      - name: Generate App Icons
-        run: npx tauri icon icon.png # Explicitly use icon.png from project root
-
-      - name: Debug after Generate App Icons
-        run: |
-          echo "--- Debug: After Generate App Icons ---"
-          echo "Checking Android mipmap dirs (after tauri icon):"
-          if [ -d "src-tauri/gen/android/app/src/main/res" ]; then
-            find src-tauri/gen/android/app/src/main/res/ -type d -name "mipmap*" -print -exec ls -la {} \;
-          else
-            echo "src-tauri/gen/android/app/src/main/res directory not found."
-          fi
-          echo "--- End Debug ---"
-        shell: bash
-
-      - name: Initialize Tauri Android project and Check
-        run: |
-          echo "Current directory listing (before init):"
-          ls -la
-          echo "Listing src-tauri/ (before init):"
-          ls -la src-tauri/ || echo "src-tauri directory not found before init"
-          
-          echo "Deleting existing src-tauri/gen/android directory if it exists..."
-          rm -rf src-tauri/gen/android
-          
-          # echo "Attempting to create the full expected Java package directory structure manually..." # Removed this line
-          # mkdir -p src-tauri/gen/android/app/src/main/java/com/libretv/app # Removed this line
-          echo "Listing src-tauri/gen/ (after potential rm, before init):" # Modified log message
-          ls -la src-tauri/gen/ || echo "src-tauri/gen still not found"
-          echo "Listing src-tauri/gen/android/app/src/main/java/com/libretv/app (after potential rm, before init - this path might not exist yet):" # Modified log message
-          ls -la src-tauri/gen/android/app/src/main/java/com/libretv/app || echo "Deep path .../com/libretv/app not found after deep mkdir"
-          
-          echo "Verifying NDK environment variables before init (NDK_HOME should be globally set now)..."
-          echo "ANDROID_NDK_HOME is: $ANDROID_NDK_HOME"
-          echo "NDK_HOME is: $NDK_HOME" # This should now reflect the globally set value
-          
-          echo "Running npm run tauri -- android init -vvv (all output to stdout)..."
-          npm run tauri -- android init -vvv 2>&1
-          INIT_EXIT_CODE=$?
-          echo "tauri android init command finished with exit code: $INIT_EXIT_CODE"
-          
-          echo "Listing src-tauri/ (after init):"
-          ls -la src-tauri/ || echo "src-tauri directory not found after init"
-          
-          echo "Checking for src-tauri/gen/ and src-tauri/gen/android/ (after init):"
-          if [ -d "src-tauri/gen" ]; then
-            echo "src-tauri/gen/ directory exists. Listing contents:"
-            ls -la src-tauri/gen/
-            if [ -d "src-tauri/gen/android" ]; then
-              echo "src-tauri/gen/android directory exists. Recursively listing all subdirectories and their contents:"
-              find src-tauri/gen/android -ls
-              echo "Attempting to list src-tauri/gen/android/app/src/main/java/ specifically:"
-              ls -la src-tauri/gen/android/app/src/main/java/ || echo "Path to .../app/src/main/java/ not found after init."
-            else
-              echo "src-tauri/gen/android directory DOES NOT exist after init (but src-tauri/gen does)."
-            fi
-          else
-            echo "src-tauri/gen/ directory DOES NOT exist after init."
-          fi
-
-          if [ $INIT_EXIT_CODE -ne 0 ]; then
-            echo "Error: tauri android init command failed with exit code $INIT_EXIT_CODE."
-            exit $INIT_EXIT_CODE
-          fi
-
-      - name: Generate App Icons (Post-Init)
-        run: npx tauri icon icon.png # Use icon.png from project root
-
-      - name: Debug after Post-Init Generate App Icons
-        run: |
-          echo "--- Debug: After Post-Init Generate App Icons ---"
-          echo "Checking Android mipmap dirs (after post-init tauri icon):"
-          if [ -d "src-tauri/gen/android/app/src/main/res" ]; then
-            find src-tauri/gen/android/app/src/main/res/ -type d -name "mipmap*" -print -exec ls -la {} \;
-          else
-            echo "src-tauri/gen/android/app/src/main/res directory not found."
-          fi
-          echo "--- End Debug ---"
-        shell: bash
-
-      - name: Override Android resources for immersive mode
-        run: |
-          echo "Overriding Android resources for immersive mode..."
-          SOURCE_RES_DIR="src-tauri/mobile/android/app/src/main/res"
-          DEST_RES_DIR="src-tauri/gen/android/app/src/main/res"
-
-          if [ -d "$SOURCE_RES_DIR" ]; then
-            echo "Source resource directory found at $SOURCE_RES_DIR"
-            echo "Copying contents to $DEST_RES_DIR"
-            # Use rsync to copy the contents, which is robust
-            rsync -av --copy-links "$SOURCE_RES_DIR/" "$DEST_RES_DIR/"
-            echo "Resource override complete. Verifying copied files:"
-            find "$DEST_RES_DIR" -ls
-          else
-            echo "::error:: Source resource directory for override not found at $SOURCE_RES_DIR"
-            exit 1
-          fi
-        shell: bash
-
-      - name: Override MainActivity for immersive mode
-        run: |
-          echo "Overriding MainActivity.kt for immersive mode..."
-          SOURCE_ACTIVITY_PATH="src-tauri/mobile/android/app/src/main/java/com/libretv/app/MainActivity.kt"
-          DEST_ACTIVITY_DIR="src-tauri/gen/android/app/src/main/java/com/libretv/app"
-          
-          if [ -f "$SOURCE_ACTIVITY_PATH" ]; then
-            echo "Source MainActivity.kt found. Copying to $DEST_ACTIVITY_DIR"
-            mkdir -p "$DEST_ACTIVITY_DIR"
-            cp "$SOURCE_ACTIVITY_PATH" "$DEST_ACTIVITY_DIR/"
-            echo "MainActivity.kt override complete. Verifying copied file:"
-            ls -l "$DEST_ACTIVITY_DIR/MainActivity.kt"
-          else
-            echo "::error:: Source MainActivity.kt for override not found at $SOURCE_ACTIVITY_PATH"
-            exit 1
-          fi
-        shell: bash
-
-      - name: Decode Keystore for apksigner
-        run: |
-          echo "Decoding Keystore JKS for apksigner..."
-          KEYSTORE_FILE_PATH="$RUNNER_TEMP/upload-keystore.jks"
-          echo "${{ secrets.ANDROID_SIGNING_KEY_JKS_BASE64 }}" | base64 --decode > "$KEYSTORE_FILE_PATH"
-          echo "Keystore JKS file decoded to $KEYSTORE_FILE_PATH"
-          # Make it available for subsequent steps if needed via env var
-          echo "SIGNING_KEYSTORE_PATH=$KEYSTORE_FILE_PATH" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Modify build.gradle.kts for signing
-        run: |
-          chmod +x .github/scripts/configure_gradle_signing.sh
-          .github/scripts/configure_gradle_signing.sh
-        shell: bash
-
-      - name: Verify Decoded Keystore
-        run: |
-          KEYSTORE_FILE_PATH="$RUNNER_TEMP/upload-keystore.jks"
-          echo "Verifying keystore: $KEYSTORE_FILE_PATH with alias ${{ secrets.ANDROID_KEY_ALIAS }}"
-          if [ ! -f "$KEYSTORE_FILE_PATH" ]; then
-            echo "Error: Keystore file $KEYSTORE_FILE_PATH not found for verification!"
-            exit 1
-          fi
-          keytool -list -v \
-            -keystore "$KEYSTORE_FILE_PATH" \
-            -storepass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}"
-          echo "Keystore verification command executed successfully."
-        shell: bash
-
-      # - name: Build Tauri Android application (Using tauri-action) # Disabled due to NDK_HOME issues with the action
-      #   uses: tauri-apps/tauri-action@v0
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-      #     NDK_HOME: ${{ env.NDK_HOME }}
-      #     # TAURI_ANDROID_KEYSTORE_PATH is set from the previous step via $GITHUB_ENV
-      #     # Other TAURI_ANDROID_... variables are set from the job-level env block
-      #   with:
-      #     tagName: ${{ github.ref_name }}
-      #     releaseId: ${{ needs.create_release.outputs.release_id }}
-      #     projectPath: '.'
-      #     tauriScript: 'tauri android'
-      #     args: '-v'
-
-      - name: Build Tauri Android application (Direct Command)
-        run: npx tauri android build -v # -v for verbose output, should produce an AAB
+          targets: aarch64-linux-android,x86_64-linux-android
+      - name: Restore and validate existing signing key
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # NDK_HOME should be globally available from "Set NDK_HOME globally" step
-          # Keystore env vars are set at job level or by previous step
-
-      - name: Enhanced Debugging before Android Build
+          ANDROID_SIGNING_KEY_JKS_BASE64: ${{ secrets.ANDROID_SIGNING_KEY_JKS_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "--- Enhanced Debugging: Before Android Build ---"
-          FINAL_MANIFEST="src-tauri/gen/android/app/src/main/AndroidManifest.xml"
-          if [ -f "$FINAL_MANIFEST" ]; then
-            echo "Contents of final AndroidManifest.xml:"
-            cat "$FINAL_MANIFEST"
-            echo "Searching for icon references in AndroidManifest.xml:"
-            grep -E 'android:icon|android:roundIcon' "$FINAL_MANIFEST" || echo "No android:icon or android:roundIcon found."
-            echo "Searching for activity theme references in AndroidManifest.xml:"
-            grep 'android:theme' "$FINAL_MANIFEST" || echo "No android:theme for activity found."
-          else
-            echo "Error: Final AndroidManifest.xml not found at $FINAL_MANIFEST"
-          fi
-
-          echo "Checking a sample mipmap icon file details:"
-          SAMPLE_ICON="src-tauri/gen/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
-          if [ -f "$SAMPLE_ICON" ]; then
-            echo "Details for $SAMPLE_ICON:"
-            ls -l "$SAMPLE_ICON"
-            file "$SAMPLE_ICON"
-          else
-            echo "Error: Sample icon $SAMPLE_ICON not found."
-          fi
-          
-          echo "Checking for styles.xml or themes.xml in generated resources:"
-          GENERATED_VALUES_DIR="src-tauri/gen/android/app/src/main/res/values"
-          if [ -d "$GENERATED_VALUES_DIR" ]; then
-            ls -la "$GENERATED_VALUES_DIR"
-            if [ -f "$GENERATED_VALUES_DIR/themes.xml" ]; then
-              echo "Contents of generated themes.xml:"
-              cat "$GENERATED_VALUES_DIR/themes.xml"
-            elif [ -f "$GENERATED_VALUES_DIR/styles.xml" ]; then
-              echo "Contents of generated styles.xml:"
-              cat "$GENERATED_VALUES_DIR/styles.xml"
-            else
-              echo "No themes.xml or styles.xml found in $GENERATED_VALUES_DIR"
-            fi
-          else
-            echo "Directory $GENERATED_VALUES_DIR not found."
-          fi
-          echo "--- End Enhanced Debugging ---"
-        shell: bash
-
-      - name: Archive mipmap resources for inspection
-        uses: actions/upload-artifact@v4
+          set -euo pipefail
+          for key in ANDROID_SIGNING_KEY_JKS_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            test -n "${!key}" || { echo "::error::Required secret $key is missing"; exit 1; }
+          done
+          umask 077
+          printf '%s' "$ANDROID_SIGNING_KEY_JKS_BASE64" | base64 --decode > "$RUNNER_TEMP/kennys-signing.keystore"
+          test -s "$RUNNER_TEMP/kennys-signing.keystore"
+          keytool -exportcert -keystore "$RUNNER_TEMP/kennys-signing.keystore" -alias "$ANDROID_KEY_ALIAS" -storepass:env ANDROID_KEYSTORE_PASSWORD -file "$RUNNER_TEMP/kennys-cert.der"
+          echo '965971a372fcbbef3a7e2d540cb58664dc671e771ea016f8cb439e683b215d3a  '"$RUNNER_TEMP/kennys-cert.der" | sha256sum --check
+          echo "ANDROID_SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/kennys-signing.keystore" >> "$GITHUB_ENV"
+      - name: Install pinned Android tools
+        run: |
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;30.0.16248370'
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+      - run: npm ci
+      - name: Build existing Android project without reinitializing native code
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x src-tauri/gen/android/gradlew
+          npm run tauri -- android build --apk --target aarch64 x86_64 --ci
+      - name: Verify signed APK and version
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          APK='src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk'
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | tee "$RUNNER_TEMP/apk-certificate.txt"
+          grep -F '965971a372fcbbef3a7e2d540cb58664dc671e771ea016f8cb439e683b215d3a' "$RUNNER_TEMP/apk-certificate.txt"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "name='com.libretv.app'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "versionName='$APP_VERSION'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "native-code: 'arm64-v8a' 'x86_64'" "$RUNNER_TEMP/apk-badging.txt"
+          cp "$APK" "ci-output/KennysVideo-$APP_VERSION-android.apk"
+      - uses: actions/upload-artifact@v4
         with:
-          name: android-mipmap-resources-${{ github.ref_name }}
-          path: |
-            src-tauri/gen/android/app/src/main/res/mipmap-*
-            src-tauri/gen/android/app/src/main/AndroidManifest.xml
-            src-tauri/gen/android/app/src/main/res/values/themes.xml
-            src-tauri/gen/android/app/src/main/res/values/styles.xml
-          if-no-files-found: warn # Use warn to not fail the build if a file is missing, but log it
-
-      - name: Get AAB Signature Info using bundletool
-        run: |
-          # Find the AAB file first
-          AAB_DIR_FOR_VERIFY="src-tauri/gen/android/app/build/outputs/bundle"
-          AAB_CANDIDATE_1_VERIFY="$AAB_DIR_FOR_VERIFY/universalRelease/app-universal-release.aab"
-          AAB_CANDIDATE_2_VERIFY="$AAB_DIR_FOR_VERIFY/release/app-release.aab"
-
-          AAB_TO_VERIFY=""
-          if [ -f "$AAB_CANDIDATE_1_VERIFY" ]; then
-            AAB_TO_VERIFY="$AAB_CANDIDATE_1_VERIFY"
-          elif [ -f "$AAB_CANDIDATE_2_VERIFY" ]; then
-            AAB_TO_VERIFY="$AAB_CANDIDATE_2_VERIFY"
-          fi
-          
-          if [ -z "$AAB_TO_VERIFY" ]; then
-            echo "Error: AAB file NOT found at expected locations for verification."
-            echo "Searched for: $AAB_CANDIDATE_1_VERIFY"
-            echo "Searched for: $AAB_CANDIDATE_2_VERIFY"
-            echo "Listing contents of $AAB_DIR_FOR_VERIFY and its subdirectories..."
-            ls -R "$AAB_DIR_FOR_VERIFY" || echo "Bundle directory $AAB_DIR_FOR_VERIFY not found."
-            exit 1
-          fi
-          
-          echo "Getting signature info from AAB: $AAB_TO_VERIFY using bundletool"
-          # bundletool.jar is downloaded in a later step, so we need to ensure it's available here
-          # For now, let's assume it's already downloaded or adjust the workflow to download it earlier.
-          # To be safe, let's add a download step for bundletool here if not present.
-          if [ ! -f "bundletool.jar" ]; then
-            echo "bundletool.jar not found, downloading..."
-            BTOOL_VERSION="1.16.0" # Updated bundletool version
-            wget https://github.com/google/bundletool/releases/download/${BTOOL_VERSION}/bundletool-all-${BTOOL_VERSION}.jar -O bundletool.jar
-          fi
-          echo "Validating AAB: $AAB_TO_VERIFY using bundletool validate"
-          java -jar bundletool.jar validate --bundle="$AAB_TO_VERIFY"
-          echo "bundletool validate command executed."
-        shell: bash
-
-      - name: Check AAB output and set path
-        id: check_aab
-        run: |
-          AAB_DIR="src-tauri/gen/android/app/build/outputs/bundle"
-          echo "Looking for AAB in $AAB_DIR..."
-          # Common patterns for release AABs (signed or unsigned by Gradle)
-          # Gradle typically produces app-release.aab (signed) or app-release-unsigned.aab (unsigned)
-          AAB_CANDIDATE_SIGNED_UNIVERSAL="$AAB_DIR/universalRelease/app-universal-release.aab" # If tauri produces this structure
-          AAB_CANDIDATE_SIGNED_RELEASE="$AAB_DIR/release/app-release.aab"
-          AAB_CANDIDATE_UNSIGNED_RELEASE="$AAB_DIR/release/app-release-unsigned.aab"
-
-          if [ -f "$AAB_CANDIDATE_UNSIGNED_RELEASE" ]; then
-            AAB_PATH="$AAB_CANDIDATE_UNSIGNED_RELEASE"
-            echo "Found unsigned release AAB: $AAB_PATH"
-          elif [ -f "$AAB_CANDIDATE_SIGNED_RELEASE" ]; then
-            AAB_PATH="$AAB_CANDIDATE_SIGNED_RELEASE"
-            echo "Found signed release AAB: $AAB_PATH"
-          elif [ -f "$AAB_CANDIDATE_SIGNED_UNIVERSAL" ]; then # Less common for default Gradle output
-            AAB_PATH="$AAB_CANDIDATE_SIGNED_UNIVERSAL"
-            echo "Found universal release AAB: $AAB_PATH"
-          else
-            echo "Error: AAB file NOT found at expected locations."
-            echo "Searched for: $AAB_CANDIDATE_1"
-            echo "Searched for: $AAB_CANDIDATE_2"
-            echo "Listing contents of $AAB_DIR and its subdirectories..."
-            ls -R "$AAB_DIR" || echo "Bundle directory $AAB_DIR not found."
-            exit 1
-          fi
-          
-          echo "AAB file found at $AAB_PATH"
-          echo "aab_file_path=$AAB_PATH" >> $GITHUB_OUTPUT
-          ls -l "$AAB_PATH"
-        shell: bash
-
-      - name: Debug before Upload AAB
-        run: |
-          echo "Attempting to upload AAB artifact."
-          echo "AAB Path from check_aab step: ${{ steps.check_aab.outputs.aab_file_path }}"
-          ls -lh ${{ steps.check_aab.outputs.aab_file_path }} || echo "AAB file not found at path for ls command."
-        shell: bash
-
-      - name: Upload AAB for debugging
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-aab-debug-${{ github.ref_name }}
-          path: ${{ steps.check_aab.outputs.aab_file_path }}
+          name: build-android
+          path: ci-output/*
           if-no-files-found: error
-
-      - name: Debug after Upload AAB
-        run: echo "Upload AAB artifact step finished."
-        shell: bash
-
-      - name: Download bundletool
-        run: |
-          # bundletool.jar might have been downloaded by 'Get AAB Signature Info using bundletool'
-          # This step ensures it is present and verifies version if re-downloaded.
-          if [ ! -f "bundletool.jar" ]; then
-            echo "bundletool.jar not found, downloading..."
-            BTOOL_VERSION="1.16.0"
-            wget https://github.com/google/bundletool/releases/download/${BTOOL_VERSION}/bundletool-all-${BTOOL_VERSION}.jar -O bundletool.jar
-          else
-            echo "bundletool.jar already exists."
-          fi
-          java -jar bundletool.jar version # Verify version
-        shell: bash
-
-      - name: Build APKs from AAB using bundletool
-        id: build_split_apks_unsigned # Renamed id for clarity
-        run: |
-          echo "Building UNSIGNED Split APKs using bundletool..."
-          # Keystore information is removed as we want unsigned APKs from this step
-          java -jar bundletool.jar build-apks --bundle=${{ steps.check_aab.outputs.aab_file_path }} \
-            --output=app_bundle_split_unsigned.apks \
-            --mode=universal # Keep universal mode to get all splits, but they will be within an APKS for extraction
-            # No --ks flags, we want an unsigned .apks if AAB is unsigned, or if AAB is signed, this still extracts them without re-signing here.
-            # The key is that the individual .apk files inside this .apks will be what we need to sign individually.
-            # If the AAB was signed by Gradle, bundletool build-apks without --ks might still produce signed APKs if it just extracts.
-            # To be certain, we should ensure the AAB from 'npx tauri android build' is unsigned, or use bundletool extract-apks.
-            # For now, let's assume this produces an APKS from which we can get base APKs to sign.
-            # A safer alternative if AAB is signed:
-            # java -jar bundletool.jar extract-apks --apks=app_bundle_signed.apks --output-dir=extracted_from_signed_apks --device-spec=device_spec.json
-            # But we want to sign them ourselves with apksigner.
-            # Let's assume the AAB from `npx tauri android build` is unsigned because we removed signing from tauri.conf.json.
-            # Therefore, `bundletool build-apks --mode=universal` (without --ks) on an unsigned AAB should produce an .apks containing unsigned .apk files.
-          echo "UNSIGNED app_bundle_split_unsigned.apks generated."
-          ls -l app_bundle_split_unsigned.apks
-        shell: bash
-
-      - name: Debug before Upload Split APKS
-        run: |
-          echo "Attempting to upload Split APKS (unsigned) artifact."
-          echo "Split APKS Path: ${{ github.workspace }}/app_bundle_split_unsigned.apks"
-          ls -lh ${{ github.workspace }}/app_bundle_split_unsigned.apks || echo "Split APKS file (unsigned) not found at path for ls command."
-        shell: bash
-
-      - name: Upload Split APKS (unsigned) for debugging
-        uses: actions/upload-artifact@v4
+          retention-days: 7
+      - name: Remove runner-local signing materials
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/kennys-signing.keystore" "$RUNNER_TEMP/kennys-cert.der"
+  package:
+    needs: [prepare, desktop, android]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: android-split-apks-unsigned-debug-${{ github.ref_name }}
-          path: app_bundle_split_unsigned.apks # This path is relative to GITHUB_WORKSPACE
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          path: ci-output
+          merge-multiple: true
+      - name: Package source and update feeds
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist-windows dist-android
+          cp ci-output/*-x64.exe ci-output/*-x64-setup.exe dist-windows/
+          cp ci-output/*-android.apk dist-android/
+          python3 tests/packageSource.py
+          python3 tests/prepareRelease.py
+          python3 tests/prepareAndroidRelease.py
+          python3 tests/releaseChecksums.py
+          cp dist-windows/* dist-android/android-update.json ci-output/
+          cd ci-output
+          sha256sum --check "KennysVideo-$APP_VERSION-SHA256SUMS.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-release-${{ needs.prepare.outputs.version }}
+          path: ci-output/*
           if-no-files-found: error
-      
-      - name: Debug after Upload Split APKS
-        run: echo "Upload Split APKS (unsigned) artifact step finished."
-        shell: bash
-
-      - name: Build Universal APK (unsigned) from AAB using bundletool
-        id: build_unsigned_universal_apk
-        run: |
-          echo "Building unsigned Universal APK from AAB: ${{ steps.check_aab.outputs.aab_file_path }}"
-          java -jar bundletool.jar build-apks --bundle=${{ steps.check_aab.outputs.aab_file_path }} \
-            --output=app_bundle_universal_unsigned.apks \
-            --mode=universal
-            # No --ks flags, we want an unsigned .apks if AAB is unsigned
-          echo "app_bundle_universal_unsigned.apks generated."
-          ls -l app_bundle_universal_unsigned.apks
-        shell: bash
-
-      - name: Extract unsigned Universal APK
-        id: extract_unsigned_apk_file
-        run: |
-          echo "Extracting unsigned Universal APK from app_bundle_universal_unsigned.apks..."
-          mkdir -p extracted_universal_unsigned_apk
-          unzip -oj app_bundle_universal_unsigned.apks universal.apk -d extracted_universal_unsigned_apk
-          UNSIGNED_APK_PATH="extracted_universal_unsigned_apk/universal.apk"
-          if [ -f "$UNSIGNED_APK_PATH" ]; then
-            echo "Unsigned Universal APK found at $UNSIGNED_APK_PATH"
-            echo "unsigned_universal_apk_path=$UNSIGNED_APK_PATH" >> $GITHUB_OUTPUT
-            ls -l "$UNSIGNED_APK_PATH"
-          else
-            echo "::error::Unsigned Universal APK (universal.apk) not found after extracting app_bundle_universal_unsigned.apks"
-            unzip -l app_bundle_universal_unsigned.apks
-            exit 1
-          fi
-        shell: bash
-
-      - name: Sign Universal APK (apksigner)
-        id: sign_universal_apk
-        run: |
-          echo "Signing the Universal APK with apksigner..."
-          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V -r | head -n 1)/apksigner"
-          UNSIGNED_APK_PATH="${{ steps.extract_unsigned_apk_file.outputs.unsigned_universal_apk_path }}"
-          SIGNED_APK_PATH="libretv-${{ github.ref_name }}-android-universal.apk" # Final release name
-          KEYSTORE_FILE="${{ env.SIGNING_KEYSTORE_PATH }}" # From 'Decode Keystore for apksigner' step
-
-          if [ -z "$UNSIGNED_APK_PATH" ]; then
-            echo "::error::Unsigned APK path is empty. Cannot sign."
-            exit 1
-          fi
-          if [ ! -f "$UNSIGNED_APK_PATH" ]; then
-            echo "::error::Unsigned APK file not found at: $UNSIGNED_APK_PATH"
-            exit 1
-          fi
-           if [ ! -f "$KEYSTORE_FILE" ]; then
-            echo "::error::Keystore file not found at: $KEYSTORE_FILE"
-            exit 1
-          fi
-
-          echo "Using apksigner at: $APKSIGNER_PATH"
-          echo "Input (unsigned) APK: $UNSIGNED_APK_PATH"
-          echo "Output (signed) APK: $SIGNED_APK_PATH"
-          echo "Keystore: $KEYSTORE_FILE"
-          echo "Key Alias: ${{ secrets.ANDROID_KEY_ALIAS }}"
-          
-          "$APKSIGNER_PATH" sign \
-            --verbose \
-            --ks "$KEYSTORE_FILE" \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out "$SIGNED_APK_PATH" \
-            "$UNSIGNED_APK_PATH"
-          
-          echo "apksigner command executed. Verifying signed APK..."
-          "$APKSIGNER_PATH" verify --print-certs "$SIGNED_APK_PATH"
-          echo "Signed APK path: $SIGNED_APK_PATH"
-          echo "signed_apk_path=$SIGNED_APK_PATH" >> $GITHUB_OUTPUT
-        shell: bash
-      
-      # Note: The original 'Create directory for extracted APKs, extract, and set paths' 
-      # (for split APKs) and its subsequent upload steps are now effectively for unsigned split APKs.
-      # We are focusing on the universal APK for signing first.
-      # The 'Extract Universal APK' (id: extract_universal_apk_file) and its upload step
-      # are replaced by the new apksigner flow.
-
-      - name: Create directory for extracted APKs, extract, and set paths
-        id: extract_apk_files 
-        run: |
-          echo "Extracting Split APKs from app_bundle_split_unsigned.apks (these should be unsigned)..."
-          mkdir -p extracted_split_apks
-          unzip -o app_bundle_split_unsigned.apks -d extracted_split_apks # Use the unsigned APKS file
-          echo "Contents of extracted_split_apks:"
-          ls -R extracted_split_apks/
-          
-          echo "Locating Split APK files..."
-          APK_ARMEABI_V7A=$(find extracted_split_apks -iname "*-armeabi_v7a*.apk" -print -quit)
-          APK_ARM64_V8A=$(find extracted_split_apks -iname "*-arm64_v8a*.apk" -print -quit)
-          APK_X86=$(find extracted_split_apks \( -iname "*-x86.apk" ! -iname "*-x86_64.apk" \) -print -quit)
-          if [ -z "$APK_X86" ]; then # Fallback if specific x86 not found, might pick x86 or x86_64
-             APK_X86=$(find extracted_split_apks -iname "*-x86*.apk" ! -iname "*-x86_64*.apk" -print -quit)
-          fi
-          APK_X86_64=$(find extracted_split_apks -iname "*-x86_64*.apk" -print -quit)
-
-          echo "Path for armeabi-v7a: $APK_ARMEABI_V7A"
-          echo "Path for arm64-v8a: $APK_ARM64_V8A"
-          echo "Path for x86: $APK_X86"
-          echo "Path for x86_64: $APK_X86_64"
-
-          if [ -n "$APK_ARMEABI_V7A" ]; then echo "apk_armeabi_v7a_path=$APK_ARMEABI_V7A" >> $GITHUB_OUTPUT; else echo "::warning::armeabi-v7a APK not found in extracted_split_apks"; echo "apk_armeabi_v7a_path=" >> $GITHUB_OUTPUT; fi
-          if [ -n "$APK_ARM64_V8A" ]; then echo "apk_arm64_v8a_path=$APK_ARM64_V8A" >> $GITHUB_OUTPUT; else echo "::warning::arm64-v8a APK not found in extracted_split_apks"; echo "apk_arm64_v8a_path=" >> $GITHUB_OUTPUT; fi
-          if [ -n "$APK_X86" ]; then echo "apk_x86_path=$APK_X86" >> $GITHUB_OUTPUT; else echo "::warning::x86 APK not found in extracted_split_apks"; echo "apk_x86_path=" >> $GITHUB_OUTPUT; fi
-          if [ -n "$APK_X86_64" ]; then echo "apk_x86_64_path=$APK_X86_64" >> $GITHUB_OUTPUT; else echo "::warning::x86_64 APK not found in extracted_split_apks"; echo "apk_x86_64_path=" >> $GITHUB_OUTPUT; fi
-        shell: bash
-
-      - name: Sign armeabi-v7a APK (apksigner)
-        id: sign_armeabi_v7a_apk
-        if: steps.extract_apk_files.outputs.apk_armeabi_v7a_path != '' && steps.extract_apk_files.outputs.apk_armeabi_v7a_path != null
-        run: |
-          echo "Signing the armeabi-v7a APK with apksigner..."
-          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V -r | head -n 1)/apksigner"
-          UNSIGNED_APK_PATH="${{ steps.extract_apk_files.outputs.apk_armeabi_v7a_path }}"
-          SIGNED_APK_PATH="libretv-${{ github.ref_name }}-android-armeabi-v7a.apk"
-          KEYSTORE_FILE="${{ env.SIGNING_KEYSTORE_PATH }}"
-
-          if [ ! -f "$UNSIGNED_APK_PATH" ]; then
-            echo "::error::Unsigned armeabi-v7a APK file not found at: $UNSIGNED_APK_PATH. This should not happen if the 'if' condition of the step worked."
-            # Output empty path to prevent upload of non-existent file
-            echo "signed_apk_path=" >> $GITHUB_OUTPUT
-            exit 1 # Fail the step if file is not found despite 'if'
-          fi
-          
-          echo "Using apksigner at: $APKSIGNER_PATH"
-          echo "Input (unsigned) APK: $UNSIGNED_APK_PATH"
-          echo "Output (signed) APK: $SIGNED_APK_PATH"
-          
-          "$APKSIGNER_PATH" sign \
-            --verbose \
-            --ks "$KEYSTORE_FILE" \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out "$SIGNED_APK_PATH" \
-            "$UNSIGNED_APK_PATH"
-          
-          echo "apksigner command executed for armeabi-v7a. Verifying signed APK..."
-          "$APKSIGNER_PATH" verify --print-certs "$SIGNED_APK_PATH"
-          echo "Signed armeabi-v7a APK path: $SIGNED_APK_PATH"
-          echo "signed_apk_path=$SIGNED_APK_PATH" >> $GITHUB_OUTPUT
-        shell: bash
-
-      # This step is now effectively for the *signed* universal APK
-      - name: Upload Universal APK (from apksigner)
-        # Ensure this uses the output from the 'sign_universal_apk' step
-        if: steps.sign_universal_apk.outputs.signed_apk_path != '' && steps.sign_universal_apk.outputs.signed_apk_path != null
-        uses: actions/upload-release-asset@v1
+          retention-days: 14
+      - name: Publish only NEW releases after every build passes
+        if: github.event_name == 'push' || inputs.publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.sign_universal_apk.outputs.signed_apk_path }} # Use path from apksigner step
-          asset_name: libretv-${{ github.ref_name }}-android-universal.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Upload armeabi-v7a APK (signed by apksigner)
-        if: steps.sign_armeabi_v7a_apk.outputs.signed_apk_path != '' && steps.sign_armeabi_v7a_apk.outputs.signed_apk_path != null
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.sign_armeabi_v7a_apk.outputs.signed_apk_path }}
-          asset_name: libretv-${{ github.ref_name }}-android-armeabi-v7a.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Sign arm64-v8a APK (apksigner)
-        id: sign_arm64_v8a_apk
-        if: steps.extract_apk_files.outputs.apk_arm64_v8a_path != '' && steps.extract_apk_files.outputs.apk_arm64_v8a_path != null
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          APP_VERSION: ${{ needs.prepare.outputs.version }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
         run: |
-          echo "Signing the arm64-v8a APK with apksigner..."
-          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V -r | head -n 1)/apksigner"
-          UNSIGNED_APK_PATH="${{ steps.extract_apk_files.outputs.apk_arm64_v8a_path }}"
-          SIGNED_APK_PATH="libretv-${{ github.ref_name }}-android-arm64-v8a.apk"
-          KEYSTORE_FILE="${{ env.SIGNING_KEYSTORE_PATH }}"
-
-          if [ ! -f "$UNSIGNED_APK_PATH" ]; then
-            echo "::error::Unsigned arm64-v8a APK file not found at: $UNSIGNED_APK_PATH."
-            echo "signed_apk_path=" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          TAG="v$APP_VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo '::error::Existing releases are never overwritten. Validate with publish=false or use a new version.'
             exit 1
           fi
-          
-          "$APKSIGNER_PATH" sign \
-            --verbose \
-            --ks "$KEYSTORE_FILE" \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out "$SIGNED_APK_PATH" \
-            "$UNSIGNED_APK_PATH"
-          
-          echo "apksigner command executed for arm64-v8a. Verifying signed APK..."
-          "$APKSIGNER_PATH" verify --print-certs "$SIGNED_APK_PATH"
-          echo "Signed arm64-v8a APK path: $SIGNED_APK_PATH"
-          echo "signed_apk_path=$SIGNED_APK_PATH" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Upload arm64-v8a APK (signed by apksigner)
-        if: steps.sign_arm64_v8a_apk.outputs.signed_apk_path != '' && steps.sign_arm64_v8a_apk.outputs.signed_apk_path != null
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.sign_arm64_v8a_apk.outputs.signed_apk_path }}
-          asset_name: libretv-${{ github.ref_name }}-android-arm64-v8a.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Sign x86 APK (apksigner)
-        id: sign_x86_apk
-        if: steps.extract_apk_files.outputs.apk_x86_path != '' && steps.extract_apk_files.outputs.apk_x86_path != null
-        run: |
-          echo "Signing the x86 APK with apksigner..."
-          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V -r | head -n 1)/apksigner"
-          UNSIGNED_APK_PATH="${{ steps.extract_apk_files.outputs.apk_x86_path }}"
-          SIGNED_APK_PATH="libretv-${{ github.ref_name }}-android-x86.apk"
-          KEYSTORE_FILE="${{ env.SIGNING_KEYSTORE_PATH }}"
-
-          if [ ! -f "$UNSIGNED_APK_PATH" ]; then
-            echo "::error::Unsigned x86 APK file not found at: $UNSIGNED_APK_PATH."
-            echo "signed_apk_path=" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          
-          "$APKSIGNER_PATH" sign \
-            --verbose \
-            --ks "$KEYSTORE_FILE" \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out "$SIGNED_APK_PATH" \
-            "$UNSIGNED_APK_PATH"
-          
-          echo "apksigner command executed for x86. Verifying signed APK..."
-          "$APKSIGNER_PATH" verify --print-certs "$SIGNED_APK_PATH"
-          echo "Signed x86 APK path: $SIGNED_APK_PATH"
-          echo "signed_apk_path=$SIGNED_APK_PATH" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Upload x86 APK (signed by apksigner)
-        if: steps.sign_x86_apk.outputs.signed_apk_path != '' && steps.sign_x86_apk.outputs.signed_apk_path != null
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.sign_x86_apk.outputs.signed_apk_path }}
-          asset_name: libretv-${{ github.ref_name }}-android-x86.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Sign x86_64 APK (apksigner)
-        id: sign_x86_64_apk
-        if: steps.extract_apk_files.outputs.apk_x86_64_path != '' && steps.extract_apk_files.outputs.apk_x86_64_path != null
-        run: |
-          echo "Signing the x86_64 APK with apksigner..."
-          APKSIGNER_PATH="$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V -r | head -n 1)/apksigner"
-          UNSIGNED_APK_PATH="${{ steps.extract_apk_files.outputs.apk_x86_64_path }}"
-          SIGNED_APK_PATH="libretv-${{ github.ref_name }}-android-x86_64.apk"
-          KEYSTORE_FILE="${{ env.SIGNING_KEYSTORE_PATH }}"
-
-          if [ ! -f "$UNSIGNED_APK_PATH" ]; then
-            echo "::error::Unsigned x86_64 APK file not found at: $UNSIGNED_APK_PATH."
-            echo "signed_apk_path=" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          
-          "$APKSIGNER_PATH" sign \
-            --verbose \
-            --ks "$KEYSTORE_FILE" \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out "$SIGNED_APK_PATH" \
-            "$UNSIGNED_APK_PATH"
-          
-          echo "apksigner command executed for x86_64. Verifying signed APK..."
-          "$APKSIGNER_PATH" verify --print-certs "$SIGNED_APK_PATH"
-          echo "Signed x86_64 APK path: $SIGNED_APK_PATH"
-          echo "signed_apk_path=$SIGNED_APK_PATH" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Upload x86_64 APK (signed by apksigner)
-        if: steps.sign_x86_64_apk.outputs.signed_apk_path != '' && steps.sign_x86_64_apk.outputs.signed_apk_path != null
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.sign_x86_64_apk.outputs.signed_apk_path }}
-          asset_name: libretv-${{ github.ref_name }}-android-x86_64.apk
-          asset_content_type: application/vnd.android.package-archive
+          gh release create "$TAG" --target "$SOURCE_COMMIT" --draft --title "KennysVideo $APP_VERSION · Windows / Android" --notes-file "dist-windows/KennysVideo-$APP_VERSION-release-notes.md"
+          gh release upload "$TAG" ci-output/*
+          gh release edit "$TAG" --draft=false --latest
