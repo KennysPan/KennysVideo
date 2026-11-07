@@ -67,7 +67,11 @@ jobs:
       - if: matrix.name == 'windows'
         run: npm run tauri -- build --bundles nsis
       - if: startsWith(matrix.name, 'macos-')
-        run: npm run tauri -- build --bundles app,dmg
+        run: |
+          # Finder/hdiutil can fail transiently on hosted macOS runners.
+          # Retry once using the same source and cached compiled app; still fail
+          # the job if packaging cannot succeed. Never publish a partial release.
+          npm run tauri -- build --bundles app,dmg || npm run tauri -- build --bundles app,dmg
         env:
           APPLE_SIGNING_IDENTITY: '-'
       - if: matrix.name == 'linux'
