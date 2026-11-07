@@ -23,7 +23,7 @@ import app.tauri.plugin.JSObject
 class FullscreenArgs { var fullscreen: Boolean = false }
 
 @InvokeArg
-class ExportArgs { var content: String = ""; var filename: String = "KennysVideo-Settings.json" }
+class ExportArgs { var content: String = ""; var filename: String = "KennysVideo-Settings.KennysVideo" }
 
 @InvokeArg
 class InstallArgs { var path: String = "" }
@@ -118,12 +118,12 @@ class KennysMobilePlugin(private val activity: Activity) : Plugin(activity) {
     @Command
     fun exportConfig(invoke: Invoke) {
         val args = invoke.parseArgs(ExportArgs::class.java)
-        if (args.content.toByteArray(Charsets.UTF_8).size > 10 * 1024 * 1024 || !args.filename.matches(Regex("[A-Za-z0-9._-]{1,120}\\.json"))) {
+        if (args.content.toByteArray(Charsets.UTF_8).size > 10 * 1024 * 1024 || !args.filename.matches(Regex("[A-Za-z0-9._-]{1,120}\\.(KennysVideo|json)", RegexOption.IGNORE_CASE))) {
             invoke.reject("Invalid configuration file"); return
         }
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/json"
+            type = if (args.filename.endsWith(".json", ignoreCase = true)) "application/json" else "application/octet-stream"
             putExtra(Intent.EXTRA_TITLE, args.filename)
         }
         startActivityForResult(invoke, intent, "saveConfig")

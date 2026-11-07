@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>KennysVideo - 免费在线视频搜索与观看平台</title>
     <script src="js/mobile.js"></script>
+    <script src="js/theme.js"></script>
     <script defer src="js/player_return.js"></script>
     <meta name="description" content="KennysVideo是一个免费的在线视频搜索平台，无广告、安全，提供来自多个视频源的内容搜索与观看服务，无需注册即可使用。">
     <meta name="keywords" content="在线视频,免费视频,视频搜索,电影,电视剧,KennysVideo">
@@ -22,6 +23,7 @@
     <script defer src="js/sponsorship.js"></script>
     <link rel="stylesheet" href="css/bug_report.css">
     <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/theme.css">
 </head>
 <body class="page-bg text-white flex flex-col min-h-screen">
     <!-- Main Content Area -->
@@ -277,6 +279,16 @@
                     </div>
                 </div>
 
+                <div id="themeSettings" class="p-3 bg-[#151515] rounded-lg shadow-inner">
+                    <h3>主题颜色</h3>
+                    <div class="theme-choices" role="group" aria-label="主题配色">
+                        <button type="button" class="theme-choice" data-theme-choice="blue" aria-pressed="true"><span class="theme-swatch" style="--swatch:#38bdf8" aria-hidden="true"></span>青蓝</button>
+                        <button type="button" class="theme-choice" data-theme-choice="emerald" aria-pressed="false"><span class="theme-swatch" style="--swatch:#34d399" aria-hidden="true"></span>翡翠</button>
+                        <button type="button" class="theme-choice" data-theme-choice="violet" aria-pressed="false"><span class="theme-swatch" style="--swatch:#a78bfa" aria-hidden="true"></span>紫罗兰</button>
+                        <button type="button" class="theme-choice" data-theme-choice="rose" aria-pressed="false"><span class="theme-swatch" style="--swatch:#fb7185" aria-hidden="true"></span>玫瑰</button>
+                    </div>
+                    <p id="themeStatus" role="status" class="text-gray-400 mt-2">当前配色：青蓝 · 自动记住选择</p>
+                </div>
                 <div id="windowCloseSettings" hidden class="p-3 bg-[#151515] rounded-lg shadow-inner">
                     <label for="windowCloseBehavior" class="block text-sm font-medium text-gray-300 mb-3">关闭按钮行为</label>
                     <select id="windowCloseBehavior" class="w-full bg-[#172534] text-gray-200 border border-sky-800 rounded-lg px-3 py-2" style="min-height:44px">
@@ -298,6 +310,7 @@
                     <button onclick="openBugReport()" class="px-4 py-2 mb-2 w-full text-sky-300 border border-sky-800 rounded-lg text-sm">反馈 BUG</button>
                     <button onclick="importConfig()" class="px-4 py-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg mb-2">导入配置</button>
                     <button onclick="exportConfig()" class="px-4 py-2 mb-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">导出配置</button>
+                    <p class="text-gray-400 mb-2">导出为加密的 .KennysVideo 文件，导入时自动识别。使用内置密钥防止直接查看，不适合保存高敏感信息；旧版 JSON 仍可导入。</p>
                     <button onclick="clearLocalStorage()" class="px-4 py-2 w-full theme-action text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg">清除Cookie</button>
                 </div>
             </div>
