@@ -21,6 +21,9 @@
  --card-hover-border:#fb718580; --border-color:#fb718540;
 }
 .theme-choices { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+/* Let the source list share its settings card's surface in every palette. */
+.api-source-list { background:transparent; scrollbar-color:var(--theme-border,#2a4353) transparent; }
+:root[data-theme] .api-source-list .api-group-title { border-color:var(--theme-border); }
 .theme-choice { display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--theme-border); border-radius:10px; background:var(--theme-surface-strong); color:#e6f2ff; min-height:48px; }
 .theme-choice[aria-pressed="true"] { border-color:var(--primary-light); background:var(--action-start); font-weight:700; }
 .theme-swatch { width:14px; height:14px; border-radius:50%; background:var(--swatch); flex-shrink:0; }
