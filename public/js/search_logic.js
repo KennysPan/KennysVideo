@@ -31,6 +31,7 @@ function searchTitleScore(title, query) {
     return best<=1 ? 70 : b.length>=5&&best<=2 ? 50 : 0;
 }
 // Search providers keep their existing wd contract; approximate requests are bounded.
+let searchGeneration = 0;
 async function search() {
     // 密码保护校验
     if (window.isPasswordProtected && window.isPasswordVerified) { // Assuming these are globally available
@@ -51,6 +52,7 @@ async function search() {
         return;
     }
     
+    const generation = ++searchGeneration;
     if (typeof showLoading === 'function') showLoading(); else console.log("Loading..."); // Assuming showLoading is global
     
     try {
@@ -131,6 +133,11 @@ async function search() {
                     api_url: apiId.startsWith('custom_') ? (typeof getCustomApiInfo === 'function' ? getCustomApiInfo(apiId.replace('custom_', ''))?.url : undefined) : undefined
                 }));
                 
+                if (!approximate && generation === searchGeneration && results.length) {
+                    allResults.push(...results);
+                    renderResults();
+                    if (typeof hideLoading === 'function') hideLoading();
+                }
                 const pageCount = data.pagecount || 1;
                 const pagesToFetch = approximate ? 0 : Math.min(pageCount - 1, API_CONFIG.search.maxPages - 1);
                 
@@ -210,10 +217,15 @@ async function search() {
                 allResults = allResults.concat(results);
             }
         });
+        if (generation !== searchGeneration) return;
         if(!allResults.some(item=>searchTitleScore(item.vod_name,query)>=90)) {
             const approximate=await Promise.all(similarSearchTerms(query).map(term=>searchSources(term,true)));
             allResults.push(...approximate.flat(2).filter(item=>searchTitleScore(item.vod_name,query)>0));
         }
+        if (generation !== searchGeneration) return;
+        renderResults();
+        function renderResults() {
+        if (generation !== searchGeneration) return;
         const seenResults=new Set();
         allResults=allResults.filter(item=>{
             const key=`${item.source_code}:${item.vod_id}`;
@@ -308,7 +320,9 @@ async function search() {
         }).join('');
         
         resultsDiv.innerHTML = safeResults;
+        }
     } catch (error) {
+        if (generation !== searchGeneration) return;
         console.error('搜索错误:', error);
         if (error.name === 'AbortError') {
             if (typeof showToast === 'function') showToast('搜索请求超时，请检查网络连接', 'error'); else console.error('Search timed out');
@@ -316,6 +330,6 @@ async function search() {
             if (typeof showToast === 'function') showToast('搜索请求失败，请稍后重试', 'error'); else console.error('Search failed');
         }
     } finally {
-        if (typeof hideLoading === 'function') hideLoading(); else console.log("Loading complete."); // Assuming hideLoading is global
+        if (generation === searchGeneration && typeof hideLoading === 'function') hideLoading();
     }
 }

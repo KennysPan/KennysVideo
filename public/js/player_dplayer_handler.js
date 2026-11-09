@@ -19,8 +19,20 @@ function setupPlayerBrandPlaceholder(player) {
 // Assumes showError, showPositionRestoreHint, setupProgressBarPreciseClicks, saveToHistory, 
 // startProgressSaveInterval, setupLongPressSpeedControl, playNextEpisode are global or imported.
 
-function initPlayer(videoUrl, sourceCode) {
+let playbackLoadGeneration = 0;
+async function initPlayer(videoUrl, sourceCode) {
     if (!videoUrl) return;
+    const generation = ++playbackLoadGeneration;
+    try {
+        videoUrl = await resolvePlaybackSource(videoUrl);
+    } catch (error) {
+        if (generation !== playbackLoadGeneration) return;
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
+        if (typeof showError === 'function') showError(error.message || '视频地址加载失败，请切换数据源');
+        return;
+    }
+    if (generation !== playbackLoadGeneration) return;
 
     let dplayerErrorTimeout = null;
     let hlsPlaybackStarted = false; 
@@ -40,9 +52,10 @@ function initPlayer(videoUrl, sourceCode) {
         loader: adFilteringEnabled ? CustomHlsJsLoader : Hls.DefaultConfig.loader,
         enableWorker: true, lowLatencyMode: false, backBufferLength: 90,
         maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1000 * 1000,
-        maxBufferHole: 0.5, fragLoadingMaxRetry: 6, fragLoadingMaxRetryTimeout: 64000,
-        fragLoadingRetryDelay: 1000, manifestLoadingMaxRetry: 3, manifestLoadingRetryDelay: 1000,
-        levelLoadingMaxRetry: 4, levelLoadingRetryDelay: 1000, startLevel: -1,
+        maxBufferHole: 0.5, fragLoadingMaxRetry: 2, fragLoadingMaxRetryTimeout: 8000,
+        fragLoadingTimeOut: 15000, manifestLoadingTimeOut: 10000, levelLoadingTimeOut: 10000,
+        fragLoadingRetryDelay: 1000, manifestLoadingMaxRetry: 1, manifestLoadingRetryDelay: 1000,
+        levelLoadingMaxRetry: 2, levelLoadingRetryDelay: 1000, startLevel: -1,
         abrEwmaDefaultEstimate: 500000, abrBandWidthFactor: 0.95, abrBandWidthUpFactor: 0.7,
         abrMaxWithRealBitrate: true, stretchShortVideoTrack: true, appendErrorMaxRetry: 5,
         liveSyncDurationCount: 3, liveDurationInfinity: false
@@ -59,7 +72,7 @@ function initPlayer(videoUrl, sourceCode) {
         ],
         video: {
             url: videoUrl,
-            type: 'hls',
+            type: /\.mp4(?:[?#]|$)/i.test(videoUrl) ? 'normal' : 'hls',
             pic: '',
             customType: {
                 hls: function(videoElement, playerInstance) { // Corrected parameters for DPlayer customType
