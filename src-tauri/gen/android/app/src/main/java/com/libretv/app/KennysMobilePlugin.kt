@@ -80,7 +80,7 @@ class KennysMobilePlugin(private val activity: Activity) : Plugin(activity) {
     fun openUpdatePage(invoke: Invoke) {
         activity.runOnUiThread {
             try {
-                activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/KennysPan/KennysVideo/releases/latest")))
+                activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gitee.com/kennysPan/kennys-video/releases/latest")))
                 invoke.resolve()
             } catch (error: Exception) { invoke.reject("Unable to open update page", error) }
         }

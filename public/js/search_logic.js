@@ -32,6 +32,30 @@ function searchTitleScore(title, query) {
 }
 // Search providers keep their existing wd contract; approximate requests are bounded.
 let searchGeneration = 0;
+// One shared pool also bounds overlapping searches. Native calls already in flight
+// finish normally; stale queued work never starts another network request.
+const SEARCH_CONCURRENCY = 6;
+const SEARCH_PAGE_SIZE = 60;
+let searchRequestsActive = 0;
+let searchRequestQueue = [];
+function drainSearchRequests() {
+    while (searchRequestsActive < SEARCH_CONCURRENCY && searchRequestQueue.length) {
+        const job = searchRequestQueue.shift();
+        if (job.generation !== searchGeneration) { job.resolve(null); continue; }
+        searchRequestsActive++;
+        Promise.resolve().then(job.run).then(job.resolve, job.reject).finally(() => {
+            searchRequestsActive--;
+            drainSearchRequests();
+        });
+    }
+}
+function enqueueSearchRequest(generation, options) {
+    return new Promise((resolve, reject) => {
+        searchRequestQueue.push({generation, resolve, reject,
+            run: () => generation === searchGeneration ? tauriConstants.invoke('make_http_request', {options}) : null});
+        drainSearchRequests();
+    });
+}
 async function search() {
     // 密码保护校验
     if (window.isPasswordProtected && window.isPasswordVerified) { // Assuming these are globally available
@@ -53,17 +77,41 @@ async function search() {
     }
     
     const generation = ++searchGeneration;
+    searchRequestQueue.splice(0).forEach(job => job.resolve(null));
+    const sources = [...selectedAPIs];
+    try {
+    const scores = new Map();
+    const score = title => {
+        if (!scores.has(title)) scores.set(title, searchTitleScore(title, query));
+        return scores.get(title);
+    };
+    let visibleLimit = SEARCH_PAGE_SIZE;
+    let renderedOnce = false;
+    let renderFrame = null;
+    const flushResults = () => {
+        if (renderFrame !== null && typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(renderFrame);
+        renderFrame = null;
+        renderResults();
+        renderedOnce = true;
+    };
+    const scheduleResults = () => {
+        if (!renderedOnce || typeof window.requestAnimationFrame !== 'function') return flushResults();
+        if (renderFrame === null) renderFrame = window.requestAnimationFrame(() => {
+            renderFrame = null;
+            flushResults();
+        });
+    };
+    let allResults = [];
     if (typeof showLoading === 'function') showLoading(); else console.log("Loading..."); // Assuming showLoading is global
     
-    try {
         // 保存搜索历史
         // Assuming saveSearchHistory is global or defined elsewhere (e.g., history.js)
         if (typeof saveSearchHistory === 'function') saveSearchHistory(query); else console.warn("saveSearchHistory not defined");
         sessionStorage.setItem('lastSearchQuery', query);
         sessionStorage.setItem('lastPageView', 'searchResults');
         
-        let allResults = [];
-        const searchSources = (term, approximate=false) => Promise.all(selectedAPIs.map(async (apiId) => {
+        const searchSources = (term, approximate=false) => Promise.all(sources.map(async (apiId) => {
+            if (generation !== searchGeneration) return [];
             let apiUrl = ''; 
             try {
                 const resultsAreaEl = document.getElementById('resultsArea');
@@ -102,7 +150,8 @@ async function search() {
                 };
                 console.log(`[MY_APP_DEBUG_APP_SEARCH] API ${apiId} Invoking make_http_request for main search:`, JSON.stringify(rustRequestOptions));
                 
-                const rustResponse = await tauriConstants.invoke('make_http_request', { options: rustRequestOptions });
+                const rustResponse = await enqueueSearchRequest(generation, rustRequestOptions);
+                if (!rustResponse || generation !== searchGeneration) return [];
                 console.log(`[MY_APP_DEBUG_APP_SEARCH] API ${apiId} Response from Rust. Status: ${rustResponse.status}. Body preview: ${(rustResponse.body || "").substring(0,100)}`);
 
                 if (!(rustResponse.status >= 200 && rustResponse.status < 300)) {
@@ -135,7 +184,7 @@ async function search() {
                 
                 if (!approximate && generation === searchGeneration && results.length) {
                     allResults.push(...results);
-                    renderResults();
+                    scheduleResults();
                     if (typeof hideLoading === 'function') hideLoading();
                 }
                 const pageCount = data.pagecount || 1;
@@ -162,7 +211,8 @@ async function search() {
                                 };
                                 console.log(`[MY_APP_DEBUG_APP_SEARCH] API ${apiId} Invoking make_http_request for page ${page}:`, JSON.stringify(pageRequestOptions));
 
-                                const pageRustResponse = await tauriConstants.invoke('make_http_request', { options: pageRequestOptions });
+                                const pageRustResponse = await enqueueSearchRequest(generation, pageRequestOptions);
+                                if (!pageRustResponse || generation !== searchGeneration) return [];
                                 console.log(`[MY_APP_DEBUG_APP_SEARCH] API ${apiId} Page ${page} Response from Rust. Status: ${pageRustResponse.status}. Body preview: ${(pageRustResponse.body || "").substring(0,100)}`);
 
                                 if (!(pageRustResponse.status >= 200 && pageRustResponse.status < 300)) {
@@ -218,12 +268,12 @@ async function search() {
             }
         });
         if (generation !== searchGeneration) return;
-        if(!allResults.some(item=>searchTitleScore(item.vod_name,query)>=90)) {
+        if(!allResults.some(item=>score(item.vod_name)>=90)) {
             const approximate=await Promise.all(similarSearchTerms(query).map(term=>searchSources(term,true)));
-            allResults.push(...approximate.flat(2).filter(item=>searchTitleScore(item.vod_name,query)>0));
+            allResults.push(...approximate.flat(2).filter(item=>score(item.vod_name)>0));
         }
         if (generation !== searchGeneration) return;
-        renderResults();
+        flushResults();
         function renderResults() {
         if (generation !== searchGeneration) return;
         const seenResults=new Set();
@@ -231,12 +281,8 @@ async function search() {
             const key=`${item.source_code}:${item.vod_id}`;
             if(seenResults.has(key)) return false;
             seenResults.add(key); return true;
-        }).sort((a,b)=>searchTitleScore(b.vod_name,query)-searchTitleScore(a.vod_name,query));
+        }).sort((a,b)=>score(b.vod_name)-score(a.vod_name));
         
-        const searchResultsCount = document.getElementById('searchResultsCount');
-        if (searchResultsCount) {
-            searchResultsCount.textContent = allResults.length;
-        }
         
         const resultsAreaEl = document.getElementById('resultsArea');
         if (resultsAreaEl) resultsAreaEl.classList.remove('hidden');
@@ -244,6 +290,8 @@ async function search() {
         const resultsDiv = document.getElementById('results');
         
         if (!allResults || allResults.length === 0) {
+            const count = document.getElementById('searchResultsCount');
+            if (count) count.textContent = 0;
             resultsDiv.innerHTML = `
                 <div class="col-span-full text-center py-16">
                     <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -267,7 +315,10 @@ async function search() {
             });
         }
 
-        const safeResults = allResults.map(item => {
+        const searchResultsCount = document.getElementById('searchResultsCount');
+        if (searchResultsCount) searchResultsCount.textContent = allResults.length;
+
+        const safeResults = allResults.slice(0, visibleLimit).map(item => {
             const safeId = item.vod_id ? item.vod_id.toString().replace(/[^\w-]/g, '') : '';
             const safeName = (item.vod_name || '').toString()
                 .replace(/</g, '<')
@@ -320,6 +371,18 @@ async function search() {
         }).join('');
         
         resultsDiv.innerHTML = safeResults;
+        if (allResults.length > visibleLimit && typeof document.createElement === 'function') {
+            const more = document.createElement('button');
+            more.type = 'button';
+            more.className = 'col-span-full py-3 px-4 rounded-lg border border-cyan-700 text-cyan-300';
+            more.textContent = `显示更多（已显示 ${Math.min(visibleLimit, allResults.length)} / ${allResults.length}）`;
+            more.onclick = () => {
+                if (generation !== searchGeneration) return;
+                visibleLimit += SEARCH_PAGE_SIZE;
+                flushResults();
+            };
+            resultsDiv.append(more);
+        }
         }
     } catch (error) {
         if (generation !== searchGeneration) return;
